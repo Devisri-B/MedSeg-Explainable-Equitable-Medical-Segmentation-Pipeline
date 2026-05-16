@@ -1,0 +1,31 @@
+# Data & model artifacts (large / regenerable). Leading slash anchors these to the
+# repo root so we ignore ONLY the top-level data/ and outputs/ — never medseg/data/.
+/data/
+/outputs/
+*.pth
+*.ckpt
+*.npy
+*.npz
+
+# Python
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Allow small demo assets to be committed
+!assets/**
