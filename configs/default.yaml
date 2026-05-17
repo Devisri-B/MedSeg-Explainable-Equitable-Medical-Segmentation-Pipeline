@@ -1,0 +1,40 @@
+# Default configuration for MedSeg-RAI.
+# Override any field with `--config path/to/your.yaml` or CLI flags (see medseg/train.py).
+
+data:
+  name: pannuke              # pannuke | synthetic
+  root: data/pannuke         # folder holding the PanNuke folds
+  image_size: 256
+  num_classes: 6
+  class_names: [Background, Neoplastic, Inflammatory, Connective, Dead, Epithelial]
+  train_folds: [1, 2]        # PanNuke ships as 3 folds; we train on 1+2, test on 3
+  test_fold: 3
+  val_fraction: 0.15         # carved from the training folds for validation
+  batch_size: 8
+  num_workers: 2
+  augment: true
+  synthetic_n: 64            # number of synthetic images (only when name: synthetic)
+
+model:
+  arch: unet
+  encoder: resnet34          # any segmentation-models-pytorch encoder name
+  encoder_weights: imagenet  # set to null for fully-offline / from-scratch training
+  pretrained: true
+
+train:
+  epochs: 40
+  lr: 0.0003
+  weight_decay: 0.0001
+  optimizer: adamw
+  scheduler: cosine          # cosine | none
+  ce_weight: 1.0
+  dice_weight: 1.0
+  include_background_in_dice: false
+  seed: 42
+  device: auto               # auto | mps | cuda | cpu
+  amp: false                 # keep false on Apple MPS
+  grad_clip: 0.0
+  early_stop_patience: 10
+  val_interval: 1
+  output_dir: outputs
+  run_name: pannuke_unet

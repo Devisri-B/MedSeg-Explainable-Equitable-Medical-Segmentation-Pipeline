@@ -1,0 +1,20 @@
+# Small, fast, no-download config used to demo/verify the whole pipeline on MPS.
+# Trains the built-in MiniUNet on synthetic H&E-like data.
+data:
+  name: synthetic
+  image_size: 128
+  synthetic_n: 160
+  batch_size: 8
+  num_workers: 0
+  augment: true
+
+model:
+  encoder: resnet34
+  encoder_weights: null      # MiniUNet fallback / from-scratch
+
+train:
+  epochs: 12
+  lr: 0.0008
+  device: auto               # -> MPS on Apple Silicon
+  run_name: synthetic_demo
+  early_stop_patience: 20
