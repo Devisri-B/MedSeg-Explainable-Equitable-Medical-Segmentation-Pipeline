@@ -7,7 +7,9 @@ Returns, per item, a dict:
   index  : int
 
 Augmentation uses albumentations when available, with a NumPy fallback so the
-project still runs in a minimal environment.
+project still runs in a minimal environment. H&E **stain jitter** (HED colour
+perturbation) is applied to the training set to harden the model against the
+scanner/lab stain variation that is the #1 domain shift in histopathology.
 """
 from __future__ import annotations
 
@@ -41,18 +43,33 @@ def _resize(img: np.ndarray, mask: np.ndarray, size: int):
     return img, mask
 
 
+def hed_jitter(img: np.ndarray, rng=np.random, sigma: float = 0.05, bias: float = 0.05) -> np.ndarray:
+    """Tellez-style HED stain augmentation.
+
+    Deconvolve RGB into Haematoxylin/Eosin/DAB stain channels, randomly scale and
+    shift each, then recompose. Simulates realistic stain/scanner variation.
+    """
+    try:
+        from skimage.color import hed2rgb, rgb2hed
+    except Exception:
+        return img  # skimage missing -> no-op
+    hed = rgb2hed(img.astype(np.float32) / 255.0)
+    for c in range(3):
+        hed[..., c] = hed[..., c] * (1.0 + rng.uniform(-sigma, sigma)) + rng.uniform(-bias, bias)
+    rgb = hed2rgb(hed)
+    return np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
+
+
 def _build_aug(size: int):
     return A.Compose(
         [
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
             A.RandomRotate90(p=0.5),
-            A.ShiftScaleRotate(
-                shift_limit=0.05, scale_limit=0.1, rotate_limit=20,
-                border_mode=0, p=0.5,
-            ),
+            A.Affine(scale=(0.9, 1.1), translate_percent=(0.0, 0.05),
+                     rotate=(-20, 20), p=0.5),
             A.RandomBrightnessContrast(0.2, 0.2, p=0.5),
-            A.HueSaturationValue(10, 15, 10, p=0.3),   # robustness to stain variation
+            A.HueSaturationValue(10, 15, 10, p=0.3),
         ]
     )
 
@@ -69,7 +86,8 @@ def _np_aug(img: np.ndarray, mask: np.ndarray):
 
 
 class HistoDataset(Dataset):
-    def __init__(self, images, masks, types, image_size=256, augment=False, normalize=True):
+    def __init__(self, images, masks, types, image_size=256, augment=False,
+                 normalize=True, stain_aug=False):
         assert len(images) == len(masks) == len(types)
         self.images = images
         self.masks = masks
@@ -77,6 +95,7 @@ class HistoDataset(Dataset):
         self.image_size = image_size
         self.augment = augment
         self.normalize = normalize
+        self.stain_aug = stain_aug
         self._aug = _build_aug(image_size) if (augment and _HAS_ALB) else None
 
     def __len__(self) -> int:
@@ -87,6 +106,8 @@ class HistoDataset(Dataset):
         msk = np.ascontiguousarray(self.masks[idx]).astype(np.int64)
         img, msk = _resize(img, msk.astype(np.uint8), self.image_size)
         msk = msk.astype(np.int64)
+        if self.augment and self.stain_aug:
+            img = hed_jitter(img)
         if self._aug is not None:
             out = self._aug(image=img, mask=msk)
             img, msk = out["image"], out["mask"]
@@ -121,22 +142,25 @@ def _stratified_split(types: Sequence[str], test_size: float, seed: int):
 
 def build_datasets(cfg: Config) -> Tuple[HistoDataset, HistoDataset, HistoDataset]:
     d = cfg.data
+    stain = getattr(d, "stain_aug", False)
     if d.name == "synthetic":
         imgs, msks, types = synthetic.generate_synthetic(d.synthetic_n, d.image_size, seed=cfg.train.seed)
         tr, tmp = _stratified_split(types, test_size=0.3, seed=cfg.train.seed)
         va, te = _stratified_split([types[i] for i in tmp], test_size=0.5, seed=cfg.train.seed)
         va, te = tmp[va], tmp[te]
 
-        def make(ix, aug):
-            return HistoDataset(imgs[ix], msks[ix], [types[i] for i in ix], d.image_size, aug)
+        def make(ix, aug, st=False):
+            return HistoDataset(imgs[ix], msks[ix], [types[i] for i in ix],
+                                d.image_size, aug, stain_aug=st)
 
-        return make(tr, d.augment), make(va, False), make(te, False)
+        return make(tr, d.augment, stain), make(va, False), make(te, False)
 
     # PanNuke
     tr_imgs, tr_msks, tr_types = pannuke.load_folds(d.root, d.train_folds)
     te_imgs, te_msks, te_types = pannuke.load_folds(d.root, [d.test_fold])
     tr, va = _stratified_split(tr_types, test_size=d.val_fraction, seed=cfg.train.seed)
-    train_ds = HistoDataset(tr_imgs[tr], tr_msks[tr], [tr_types[i] for i in tr], d.image_size, d.augment)
+    train_ds = HistoDataset(tr_imgs[tr], tr_msks[tr], [tr_types[i] for i in tr],
+                            d.image_size, d.augment, stain_aug=stain)
     val_ds = HistoDataset(tr_imgs[va], tr_msks[va], [tr_types[i] for i in va], d.image_size, False)
     test_ds = HistoDataset(te_imgs, te_msks, te_types, d.image_size, False)
     return train_ds, val_ds, test_ds
