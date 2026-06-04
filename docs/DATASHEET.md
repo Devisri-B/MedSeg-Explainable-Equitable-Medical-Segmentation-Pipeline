@@ -1,59 +1,63 @@
-# Datasheet — PanNuke (and the synthetic fallback)
+# Datasheet: PanNuke (and the synthetic fallback)
 
-Following *Datasheets for Datasets* (Gebru et al., 2018/2021). Documenting data
-provenance is itself a responsible-AI practice (transparency + privacy).
+This follows Datasheets for Datasets (Gebru et al., 2018 and 2021). Documenting data
+provenance is itself a responsible-AI practice that supports transparency and privacy.
 
 ## Motivation
-- **Purpose:** PanNuke supports nucleus instance segmentation and classification
-  across many tissue types — a strong benchmark for multi-class biological
-  segmentation and, because tissue labels are provided, for *fairness analysis*.
-- **Created by:** Gamper, Alemi Koohbanani, et al. (Tissue Image Analytics Centre,
-  University of Warwick).
+- Purpose: PanNuke supports nucleus instance segmentation and classification across many
+  tissue types. It is a strong benchmark for multi-class biological segmentation, and because
+  tissue labels are provided, it also supports fairness analysis.
+- Created by: Gamper, Alemi Koohbanani, and colleagues at the Tissue Image Analytics Centre,
+  University of Warwick.
 
 ## Composition
-- **Instances:** ~7,900 image patches of 256×256 px, H&E-stained.
-- **Classes (nuclei):** Neoplastic, Inflammatory, Connective/Soft-tissue, Dead,
-  Epithelial — plus Background. The **Dead** class encodes degraded/necrotic tissue,
-  central to the "healthy vs. degraded" analysis in this project.
-- **Tissue types:** 19 (breast, colon, lung, bladder, kidney, prostate, etc.).
-- **Splits:** distributed as 3 folds; we train on Folds 1–2 and test on Fold 3.
-- **Label format:** per-channel instance maps `(N,256,256,6)`; we collapse these to a
-  single semantic label map (see `medseg/data/pannuke.py::masks_to_semantic`).
-- **Known imbalances/biases:** tissue types are unevenly represented; the Dead class
-  is rare; staining/scanner characteristics vary by source institution. These are
-  exactly the conditions the fairness audit and drift monitor are designed to surface.
+- Instances: about 7,900 image patches of 256 by 256 pixels, H&E-stained.
+- Classes (nuclei): Neoplastic, Inflammatory, Connective or Soft-tissue, Dead, and Epithelial,
+  plus Background. The Dead class encodes degraded or necrotic tissue, which is central to the
+  healthy versus degraded analysis in this project.
+- Tissue types: 19 (breast, colon, lung, bladder, kidney, prostate, and more).
+- Splits: distributed as 3 folds. This project trains on folds 1 and 2 and tests on fold 3.
+  After a 15 percent validation split, that is about 4,402 training images, 777 validation
+  images, and 2,722 test images.
+- Label format: per-channel instance maps of shape (N, 256, 256, 6), which this project
+  collapses to a single semantic label map (`medseg/data/pannuke.py`, masks_to_semantic).
+- Known imbalances and biases: tissue types are unevenly represented, the Dead class is rare,
+  and staining and scanner characteristics vary by source institution. These are the conditions
+  the fairness audit and drift monitor are designed to surface, and the audit does find real
+  gaps across tissue and stain brightness (see [RESULTS.md](RESULTS.md)).
 
 ## Collection process
-- Curated from multiple public histopathology sources; nuclei semi-automatically
-  pre-segmented then expert-refined. See the PanNuke papers for the full protocol.
+- Curated from multiple public histopathology sources. Nuclei were semi-automatically
+  pre-segmented and then expert-refined. See the PanNuke papers for the full protocol.
 
-## Preprocessing / labeling (in this repo)
-- Images clipped to `uint8`; instance channels argmax-collapsed to semantic labels.
-- ImageNet normalisation; augmentation = flips/rotations + brightness/contrast/hue
-  jitter (the hue jitter is deliberate — it improves robustness to stain variation).
+## Preprocessing and labeling in this repo
+- Images are clipped to uint8, and instance channels are argmax-collapsed to semantic labels.
+- ImageNet normalisation is applied. Training augmentation includes flips and rotations,
+  brightness and contrast jitter, and HED stain jitter, which perturbs the Haematoxylin, Eosin,
+  and DAB stain channels to improve robustness to stain variation.
 
 ## Uses
-- **This project:** segmentation, quantification, explainability, fairness, monitoring.
-- **Should not be used for:** clinical decisions; training that ignores the
-  non-commercial license; cross-tissue claims without per-tissue evaluation.
+- This project: segmentation, quantification, explainability, fairness, and monitoring.
+- Should not be used for: clinical decisions, training that ignores the non-commercial license,
+  or cross-tissue claims without per-tissue evaluation.
 
-## Distribution & license
-- PanNuke is released for **non-commercial academic research**
-  (CC BY-NC-SA 4.0). Cite the original papers; do not redistribute commercially.
-- Official source: `https://warwick.ac.uk/fac/cross_fac/tia/data/pannuke`.
+## Distribution and license
+- PanNuke is released for non-commercial academic research (CC BY-NC-SA 4.0). Cite the original
+  papers and do not redistribute commercially.
+- Official source: https://warwick.ac.uk/fac/cross_fac/tia/data/pannuke
 
-## Privacy / PHI
-- PanNuke patches are de-identified tissue images with no direct patient identifiers,
+## Privacy and PHI
+- PanNuke patches are de-identified tissue images with no direct patient identifiers, which is
   consistent with HIPAA Safe-Harbor expectations for research imagery (see
-  [REGULATORY.md](REGULATORY.md)). Using a public, consented research dataset avoids
-  handling PHI in a portfolio context.
+  [REGULATORY.md](REGULATORY.md)). Using a public, consented research dataset avoids handling
+  protected health information in a portfolio context.
 
-## Synthetic fallback (`medseg/data/synthetic.py`)
-- A pure-NumPy generator produces H&E-like images with tissue-specific class
-  compositions. It contains **no real patient data**, runs without any download, and
-  exists so the full pipeline (and the smoke test) is reproducible anywhere.
+## Synthetic fallback (medseg/data/synthetic.py)
+- A pure-NumPy generator produces H&E-like images with tissue-specific class compositions. It
+  contains no real patient data, runs without any download, and exists so the full pipeline and
+  the smoke test are reproducible anywhere.
 
 ## Citation
-> Gamper J., Alemi Koohbanani N., et al. *PanNuke: an open pan-cancer histology
-> dataset for nuclei instance segmentation and classification.* (2019); and the
-> extended *PanNuke Dataset Extension, Insights and Baselines* (2020).
+- Gamper J., Alemi Koohbanani N., et al. PanNuke: an open pan-cancer histology dataset for nuclei
+  instance segmentation and classification (2019), and the extended PanNuke Dataset Extension,
+  Insights and Baselines (2020).
