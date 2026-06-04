@@ -26,7 +26,7 @@ data:
 
 model:
   arch: unetplusplus
-  encoder: resnet34          # try resnet50 / efficientnet-b3 for more capacity (slower)
+  encoder: resnet50          # try resnet50 / efficientnet-b3 for more capacity (slower)
   encoder_weights: imagenet
 
 train:
