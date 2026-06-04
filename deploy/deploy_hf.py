@@ -11,6 +11,11 @@ Usage (you are already logged in via `hf auth login`):
         --space      <user>/medseg-rai \
         --weights    outputs/pannuke_resnet50/best_model.pth \
         --data-root  data/pannuke
+
+After a code change, refresh only the Space (no re-upload of the weights):
+
+    python deploy/deploy_hf.py --model-repo <user>/medseg-rai-pannuke \
+        --space <user>/medseg-rai --skip-weights
 """
 from __future__ import annotations
 
@@ -48,22 +53,26 @@ def main() -> None:
     ap.add_argument("--weights", default="outputs/pannuke_resnet50/best_model.pth")
     ap.add_argument("--data-root", default="data/pannuke")
     ap.add_argument("--private", action="store_true", help="make both repos private")
+    ap.add_argument("--skip-weights", action="store_true",
+                    help="only update the Space code; leave the model repo untouched")
     args = ap.parse_args()
-
-    if not Path(args.weights).exists():
-        raise SystemExit(f"weights not found: {args.weights}")
 
     api = HfApi()
     print("[deploy] logged in as", whoami()["name"])
 
     # 1) Model repo with the weights + a model card.
-    api.create_repo(args.model_repo, repo_type="model", exist_ok=True, private=args.private)
-    print("[deploy] uploading weights (187 MB, may take a minute) ...")
-    api.upload_file(path_or_fileobj=args.weights, path_in_repo="best_model.pth",
-                    repo_id=args.model_repo, repo_type="model")
-    api.upload_file(path_or_fileobj=str(HERE / "MODEL_README.md"), path_in_repo="README.md",
-                    repo_id=args.model_repo, repo_type="model")
-    print("[deploy] weights -> https://huggingface.co/" + args.model_repo)
+    if args.skip_weights:
+        print("[deploy] --skip-weights: leaving the model repo untouched")
+    else:
+        if not Path(args.weights).exists():
+            raise SystemExit(f"weights not found: {args.weights}")
+        api.create_repo(args.model_repo, repo_type="model", exist_ok=True, private=args.private)
+        print("[deploy] uploading weights (187 MB, may take a minute) ...")
+        api.upload_file(path_or_fileobj=args.weights, path_in_repo="best_model.pth",
+                        repo_id=args.model_repo, repo_type="model")
+        api.upload_file(path_or_fileobj=str(HERE / "MODEL_README.md"), path_in_repo="README.md",
+                        repo_id=args.model_repo, repo_type="model")
+        print("[deploy] weights -> https://huggingface.co/" + args.model_repo)
 
     # 2) Space with the app and the medseg package.
     with tempfile.TemporaryDirectory() as tmp:
@@ -85,7 +94,7 @@ def main() -> None:
         api.upload_folder(folder_path=str(tmp), repo_id=args.space, repo_type="space")
 
     print("[deploy] space -> https://huggingface.co/spaces/" + args.space)
-    print("[deploy] the Space will build for a few minutes, then go live.")
+    print("[deploy] the Space will rebuild for a few minutes, then go live.")
 
 
 if __name__ == "__main__":
