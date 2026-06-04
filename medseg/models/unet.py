@@ -138,9 +138,9 @@ def default_target_layer(model: nn.Module) -> nn.Module:
     """
     decoder = getattr(model, "decoder", None)
     if decoder is not None:
-        blocks = getattr(decoder, "blocks", None)
-        if blocks is not None and len(blocks) > 0:
-            return blocks[-1]
+        # Hook the decoder's output feature map (the input to the 1x1 head). This is
+        # architecture-agnostic: it works whether the decoder stores its blocks in a
+        # ModuleList (U-Net) or a ModuleDict (U-Net++), where blocks[-1] would raise.
         return decoder
     if hasattr(model, "u1"):           # MiniUNet
         return model.u1
