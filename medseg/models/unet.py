@@ -21,29 +21,54 @@ def get_device(prefer: str = "auto") -> torch.device:
     return torch.device("cpu")
 
 
+# Friendly architecture names -> segmentation-models-pytorch decoder classes.
+_SMP_ARCH = {
+    "unet": "Unet",
+    "unetplusplus": "UnetPlusPlus",
+    "unet++": "UnetPlusPlus",
+    "deeplabv3plus": "DeepLabV3Plus",
+    "deeplabv3+": "DeepLabV3Plus",
+    "fpn": "FPN",
+    "manet": "MAnet",
+}
+
+
 def build_model(
     num_classes: int,
     encoder: str = "resnet34",
     encoder_weights: str | None = "imagenet",
     in_channels: int = 3,
+    arch: str = "unet",
 ) -> nn.Module:
+    """Build a segmentation model.
+
+    `arch` selects the segmentation-models-pytorch decoder family (Unet, Unet++,
+    DeepLabV3+, FPN, MAnet). Falls back to the dependency-free MiniUNet *only* if
+    segmentation-models-pytorch is not installed.
+    """
+    arch_key = (arch or "unet").lower()
     try:
         import segmentation_models_pytorch as smp
-
-        model = smp.Unet(
-            encoder_name=encoder,
-            encoder_weights=encoder_weights,
-            in_channels=in_channels,
-            classes=num_classes,
-        )
-        model.medseg_backend = "smp"
-        return model
     except Exception as exc:  # noqa: BLE001
         print(f"[model] segmentation-models-pytorch unavailable ({exc}); "
               f"using built-in MiniUNet.")
         model = MiniUNet(in_channels, num_classes)
         model.medseg_backend = "mini"
+        model.medseg_arch = "miniunet"
         return model
+
+    cls_name = _SMP_ARCH.get(arch_key)
+    if cls_name is None:
+        raise ValueError(f"Unknown arch {arch!r}; choose from {sorted(_SMP_ARCH)}")
+    model = getattr(smp, cls_name)(
+        encoder_name=encoder,
+        encoder_weights=encoder_weights,
+        in_channels=in_channels,
+        classes=num_classes,
+    )
+    model.medseg_backend = "smp"
+    model.medseg_arch = arch_key
+    return model
 
 
 class _DoubleConv(nn.Module):
