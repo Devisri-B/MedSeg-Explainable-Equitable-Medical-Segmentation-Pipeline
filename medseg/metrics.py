@@ -4,10 +4,14 @@ A single accumulated confusion matrix yields per-class IoU and Dice (F1), pixel
 accuracy, and mean-over-foreground-classes summaries. Pure NumPy internals so the
 metrics are unit-testable without a GPU and reusable by the fairness audit
 (compute the same metrics per tissue subgroup).
+
+`robust_exclude` lets us also report a mean over the foreground classes *excluding*
+a known-degenerate class (e.g. the ultra-rare "Dead" nuclei), so one near-zero
+class doesn't mask genuinely strong performance on the rest.
 """
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 import numpy as np
 
@@ -19,9 +23,15 @@ def _to_numpy(x):
 
 
 class SegMetrics:
-    def __init__(self, num_classes: int, class_names: Optional[List[str]] = None):
+    def __init__(
+        self,
+        num_classes: int,
+        class_names: Optional[List[str]] = None,
+        robust_exclude: Optional[Iterable[str]] = None,
+    ):
         self.num_classes = num_classes
         self.class_names = class_names or [f"class_{i}" for i in range(num_classes)]
+        self.robust_exclude = set(robust_exclude or [])
         self.reset()
 
     def reset(self) -> None:
@@ -55,12 +65,18 @@ class SegMetrics:
         present = support > 0
         fg = np.zeros(self.num_classes, dtype=bool)
         fg[1:] = present[1:]                       # foreground = non-background present classes
+        robust = fg.copy()
+        for i, name in enumerate(self.class_names):
+            if name in self.robust_exclude:
+                robust[i] = False
         result = {
             "per_class_iou": {self.class_names[i]: float(iou[i]) for i in range(self.num_classes)},
             "per_class_dice": {self.class_names[i]: float(dice[i]) for i in range(self.num_classes)},
             "support": {self.class_names[i]: int(support[i]) for i in range(self.num_classes)},
             "mean_iou_fg": float(iou[fg].mean()) if fg.any() else 0.0,
             "mean_dice_fg": float(dice[fg].mean()) if fg.any() else 0.0,
+            "mean_iou_robust": float(iou[robust].mean()) if robust.any() else 0.0,
+            "mean_dice_robust": float(dice[robust].mean()) if robust.any() else 0.0,
             "mean_iou_all": float(iou[present].mean()) if present.any() else 0.0,
             "mean_dice_all": float(dice[present].mean()) if present.any() else 0.0,
             "pixel_accuracy": float(tp.sum() / (cm.sum() + eps)),
