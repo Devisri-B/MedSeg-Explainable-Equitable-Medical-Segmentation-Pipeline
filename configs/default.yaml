@@ -3,7 +3,7 @@
 # These defaults reproduce the baseline run (CE + Dice, resnet34 U-Net).
 
 data:
-  name: pannuke              # pannuke | synthetic
+  name: pannuke              # dataset label
   root: data/pannuke         # folder holding the PanNuke folds
   image_size: 256
   num_classes: 6
@@ -15,7 +15,7 @@ data:
   num_workers: 2
   augment: true
   stain_aug: false           # HED stain jitter on the training set
-  synthetic_n: 64            # number of synthetic images (only when name: synthetic)
+  limit: 0                   # subsample N images per fold for a quick run (0 = all)
 
 model:
   arch: unet                 # unet | unetplusplus | deeplabv3plus | fpn | manet
@@ -33,9 +33,9 @@ train:
   dice_weight: 1.0           # weight of the overlap (seg) loss term
   include_background_in_dice: false
   seg_loss: dice             # dice | tversky | focal_tversky
-  tversky_alpha: 0.3         # FP weight (Tversky family)
-  tversky_beta: 0.7          # FN weight; > alpha helps rare classes
-  focal_gamma: 1.3333        # focal exponent for focal_tversky
+  tversky_alpha: 0.3
+  tversky_beta: 0.7
+  focal_gamma: 1.3333
   class_weight_scheme: median  # median | sqrt | none
   class_weight_clip: 0.0     # cap on max class weight (0 = no cap)
   select_metric: mean_dice_fg  # mean_dice_fg | mean_dice_robust

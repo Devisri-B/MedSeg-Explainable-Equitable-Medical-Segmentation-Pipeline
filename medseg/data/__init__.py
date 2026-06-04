@@ -1,2 +1,2 @@
-"""Data loading: PanNuke histopathology + a dependency-free synthetic fallback."""
-from medseg.data import pannuke, synthetic  # noqa: F401
+"""Data loading: PanNuke histopathology."""
+from medseg.data import pannuke  # noqa: F401

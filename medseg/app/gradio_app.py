@@ -1,7 +1,7 @@
 """Interactive demo: upload an H&E patch -> segmentation + quantification +
 Seg-Grad-CAM + uncertainty, all in the browser.
 
-    python -m medseg.app.gradio_app --run outputs/pannuke_unet
+    python -m medseg.app.gradio_app --run outputs/pannuke_resnet50
 
 The `run_inference` function is deliberately free of any Gradio dependency so it can
 be unit-tested and reused; only `build_demo`/`main` need Gradio installed.
@@ -78,28 +78,37 @@ def _load_model(run):
 
         model, cfg, _ = load_run(run)
         device = next(model.parameters()).device
-        return model, device, cfg.data.image_size, list(cfg.data.class_names), True
+        return model, device, cfg.data.image_size, list(cfg.data.class_names), cfg.data.root, True
 
     device = get_device("auto")
     model = build_model(len(CLASS_NAMES), encoder_weights=None).to(device).eval()
-    return model, device, 256, list(CLASS_NAMES), False
+    return model, device, 256, list(CLASS_NAMES), "data/pannuke", False
+
+
+def _real_examples(root: str, n: int = 3):
+    """Save a few real PanNuke test patches to use as demo examples (gitignored)."""
+    from PIL import Image
+
+    from medseg.data import pannuke
+
+    if not pannuke.is_available(root):
+        return []
+    imgs, _, _ = pannuke.load_fold(root, 3)
+    idx = np.linspace(0, len(imgs) - 1, n).astype(int)
+    out = ensure_dir("outputs/app_examples")
+    paths = []
+    for i, j in enumerate(idx):
+        p = out / f"example_{i}.png"
+        Image.fromarray(imgs[int(j)]).save(p)
+        paths.append(str(p))
+    return paths
 
 
 def build_demo(run=None):
     import gradio as gr
-    from PIL import Image
 
-    from medseg.data import synthetic
-
-    model, device, size, class_names, trained = _load_model(run)
-
-    ex_dir = ensure_dir("assets/examples")
-    example_imgs, _, _ = synthetic.generate_synthetic(3, size, seed=7)
-    example_paths = []
-    for i, im in enumerate(example_imgs):
-        p = ex_dir / f"example_{i}.png"
-        Image.fromarray(im).save(p)
-        example_paths.append(str(p))
+    model, device, size, class_names, data_root, trained = _load_model(run)
+    example_paths = _real_examples(data_root)
 
     def predict(image, cls_choice):
         if image is None:
@@ -110,25 +119,26 @@ def build_demo(run=None):
         table = [[n, q["object_counts"][n], round(q["areas_px"][n] / q["image_px"], 4)]
                  for n in class_names]
         summary = (
-            f"**Tissue-degradation index:** {q['degradation_index']:.3f}  |  "
-            f"**Neoplastic fraction:** {q['neoplastic_fraction']:.3f}  |  "
-            f"**Foreground:** {q['foreground_fraction']:.3f}  |  "
-            f"**Grad-CAM class:** {class_names[out['gradcam_class']]}"
+            f"Tissue-degradation index: {q['degradation_index']:.3f}  |  "
+            f"Neoplastic fraction: {q['neoplastic_fraction']:.3f}  |  "
+            f"Foreground: {q['foreground_fraction']:.3f}  |  "
+            f"Grad-CAM class: {class_names[out['gradcam_class']]}"
         )
         return out["overlay"], out["gradcam"], out["entropy"], table, summary
 
     banner = "" if trained else (
-        "\n\n> ⚠️ **No trained model found** — predictions are random. "
-        "Train first (`python -m medseg.train ...`) or pass `--run <dir>`."
+        "\n\nNote: no trained model found, so predictions are random. "
+        "Train first (python -m medseg.train ...) or pass --run <dir>."
     )
     with gr.Blocks(title="MedSeg-RAI") as demo:
-        gr.Markdown("# MedSeg-RAI — Histopathology segmentation + responsible AI" + banner)
+        gr.Markdown("# MedSeg-RAI: histopathology segmentation and responsible AI" + banner)
         with gr.Row():
             with gr.Column():
                 inp = gr.Image(type="numpy", label="H&E patch")
                 cls = gr.Dropdown(["auto"] + class_names[1:], value="auto", label="Grad-CAM class")
-                btn = gr.Button("Segment & analyse", variant="primary")
-                gr.Examples(example_paths, inputs=inp)
+                btn = gr.Button("Segment and analyse", variant="primary")
+                if example_paths:
+                    gr.Examples(example_paths, inputs=inp)
             with gr.Column():
                 out_overlay = gr.Image(label="Segmentation overlay")
                 out_cam = gr.Image(label="Seg-Grad-CAM (why this class, here)")
@@ -142,7 +152,7 @@ def build_demo(run=None):
 
 def main():
     ap = argparse.ArgumentParser(description="Launch the MedSeg-RAI demo.")
-    ap.add_argument("--run", default="outputs/synthetic_demo")
+    ap.add_argument("--run", default="outputs/pannuke_resnet50")
     ap.add_argument("--port", type=int, default=7860)
     ap.add_argument("--share", action="store_true")
     args = ap.parse_args()

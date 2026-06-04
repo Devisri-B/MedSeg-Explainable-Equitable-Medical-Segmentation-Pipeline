@@ -1,4 +1,4 @@
-"""Torch Dataset / DataLoader construction for histopathology segmentation.
+"""Torch Dataset / DataLoader construction for PanNuke histopathology segmentation.
 
 Returns, per item, a dict:
   image  : FloatTensor (3, H, W)  ImageNet-normalised
@@ -7,9 +7,9 @@ Returns, per item, a dict:
   index  : int
 
 Augmentation uses albumentations when available, with a NumPy fallback so the
-project still runs in a minimal environment. H&E **stain jitter** (HED colour
+project still runs in a minimal environment. H&E stain jitter (HED colour
 perturbation) is applied to the training set to harden the model against the
-scanner/lab stain variation that is the #1 domain shift in histopathology.
+scanner and lab stain variation that is the main domain shift in histopathology.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ except Exception:  # pragma: no cover
     _HAS_ALB = False
 
 from medseg.config import Config
-from medseg.data import pannuke, synthetic
+from medseg.data import pannuke
 
 IMAGENET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
 IMAGENET_STD = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
@@ -38,8 +38,8 @@ def _resize(img: np.ndarray, mask: np.ndarray, size: int):
         return img, mask
     from PIL import Image
 
-    img = np.asarray(Image.fromarray(img).resize((size, size), Image.BILINEAR))
-    mask = np.asarray(Image.fromarray(mask).resize((size, size), Image.NEAREST))
+    img = np.array(Image.fromarray(img).resize((size, size), Image.BILINEAR))
+    mask = np.array(Image.fromarray(mask).resize((size, size), Image.NEAREST))
     return img, mask
 
 
@@ -47,7 +47,7 @@ def hed_jitter(img: np.ndarray, rng=np.random, sigma: float = 0.05, bias: float 
     """Tellez-style HED stain augmentation.
 
     Deconvolve RGB into Haematoxylin/Eosin/DAB stain channels, randomly scale and
-    shift each, then recompose. Simulates realistic stain/scanner variation.
+    shift each, then recompose. Simulates realistic stain and scanner variation.
     """
     try:
         from skimage.color import hed2rgb, rgb2hed
@@ -140,24 +140,24 @@ def _stratified_split(types: Sequence[str], test_size: float, seed: int):
     return train_test_split(idx, test_size=test_size, random_state=seed, stratify=strat)
 
 
+def _maybe_limit(imgs, msks, types, limit: int, seed: int):
+    """Randomly subsample to `limit` images (used for quick runs and tests)."""
+    if not limit or limit <= 0 or limit >= len(imgs):
+        return imgs, msks, types
+    idx = np.random.default_rng(seed).permutation(len(imgs))[:limit]
+    return imgs[idx], msks[idx], [types[i] for i in idx]
+
+
 def build_datasets(cfg: Config) -> Tuple[HistoDataset, HistoDataset, HistoDataset]:
     d = cfg.data
     stain = getattr(d, "stain_aug", False)
-    if d.name == "synthetic":
-        imgs, msks, types = synthetic.generate_synthetic(d.synthetic_n, d.image_size, seed=cfg.train.seed)
-        tr, tmp = _stratified_split(types, test_size=0.3, seed=cfg.train.seed)
-        va, te = _stratified_split([types[i] for i in tmp], test_size=0.5, seed=cfg.train.seed)
-        va, te = tmp[va], tmp[te]
+    limit = getattr(d, "limit", 0)
 
-        def make(ix, aug, st=False):
-            return HistoDataset(imgs[ix], msks[ix], [types[i] for i in ix],
-                                d.image_size, aug, stain_aug=st)
-
-        return make(tr, d.augment, stain), make(va, False), make(te, False)
-
-    # PanNuke
     tr_imgs, tr_msks, tr_types = pannuke.load_folds(d.root, d.train_folds)
     te_imgs, te_msks, te_types = pannuke.load_folds(d.root, [d.test_fold])
+    tr_imgs, tr_msks, tr_types = _maybe_limit(tr_imgs, tr_msks, tr_types, limit, cfg.train.seed)
+    te_imgs, te_msks, te_types = _maybe_limit(te_imgs, te_msks, te_types, limit, cfg.train.seed + 1)
+
     tr, va = _stratified_split(tr_types, test_size=d.val_fraction, seed=cfg.train.seed)
     train_ds = HistoDataset(tr_imgs[tr], tr_msks[tr], [tr_types[i] for i in tr],
                             d.image_size, d.augment, stain_aug=stain)

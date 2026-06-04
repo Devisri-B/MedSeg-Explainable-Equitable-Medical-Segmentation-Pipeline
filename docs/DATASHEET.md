@@ -1,4 +1,4 @@
-# Datasheet: PanNuke (and the synthetic fallback)
+# Datasheet: PanNuke
 
 This follows Datasheets for Datasets (Gebru et al., 2018 and 2021). Documenting data
 provenance is itself a responsible-AI practice that supports transparency and privacy.
@@ -30,11 +30,17 @@ provenance is itself a responsible-AI practice that supports transparency and pr
 - Curated from multiple public histopathology sources. Nuclei were semi-automatically
   pre-segmented and then expert-refined. See the PanNuke papers for the full protocol.
 
+## Access in this repo
+- The data is pulled from the Hugging Face Hub mirror (RationAI/PanNuke) and cached locally as
+  numpy arrays by `scripts/download_data.py` and `medseg/data/pannuke.py` (prepare_from_hf). The
+  raw images are never committed to this repository.
+
 ## Preprocessing and labeling in this repo
 - Images are clipped to uint8, and instance channels are argmax-collapsed to semantic labels.
 - ImageNet normalisation is applied. Training augmentation includes flips and rotations,
   brightness and contrast jitter, and HED stain jitter, which perturbs the Haematoxylin, Eosin,
   and DAB stain channels to improve robustness to stain variation.
+- A `limit` option can subsample a few images per fold for quick runs and the test suite.
 
 ## Uses
 - This project: segmentation, quantification, explainability, fairness, and monitoring.
@@ -51,11 +57,6 @@ provenance is itself a responsible-AI practice that supports transparency and pr
   consistent with HIPAA Safe-Harbor expectations for research imagery (see
   [REGULATORY.md](REGULATORY.md)). Using a public, consented research dataset avoids handling
   protected health information in a portfolio context.
-
-## Synthetic fallback (medseg/data/synthetic.py)
-- A pure-NumPy generator produces H&E-like images with tissue-specific class compositions. It
-  contains no real patient data, runs without any download, and exists so the full pipeline and
-  the smoke test are reproducible anywhere.
 
 ## Citation
 - Gamper J., Alemi Koohbanani N., et al. PanNuke: an open pan-cancer histology dataset for nuclei

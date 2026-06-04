@@ -5,6 +5,7 @@ stays easy to read in an interview setting. Everything is plain dataclasses.
 """
 from __future__ import annotations
 
+import warnings
 from dataclasses import asdict, dataclass, field, is_dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -16,7 +17,7 @@ from medseg import CLASS_NAMES
 
 @dataclass
 class DataConfig:
-    name: str = "pannuke"                 # "pannuke" | "synthetic"
+    name: str = "pannuke"                 # dataset label
     root: str = "data/pannuke"            # folder holding the PanNuke folds
     image_size: int = 256
     num_classes: int = 6
@@ -28,7 +29,7 @@ class DataConfig:
     num_workers: int = 2
     augment: bool = True
     stain_aug: bool = False               # HED stain jitter on the training set
-    synthetic_n: int = 64                 # only used when name == "synthetic"
+    limit: int = 0                        # subsample N images per fold for quick runs/tests (0 = all)
 
 
 @dataclass
@@ -49,16 +50,14 @@ class TrainConfig:
     ce_weight: float = 1.0
     dice_weight: float = 1.0              # weight of the overlap (seg) loss term
     include_background_in_dice: bool = False
-    # Region-overlap loss + imbalance handling
     seg_loss: str = "dice"               # dice | tversky | focal_tversky
-    tversky_alpha: float = 0.3           # FP weight (Tversky family)
-    tversky_beta: float = 0.7            # FN weight; > alpha helps rare classes
-    focal_gamma: float = 1.3333          # focal exponent for focal_tversky
+    tversky_alpha: float = 0.3
+    tversky_beta: float = 0.7
+    focal_gamma: float = 1.3333
     class_weight_scheme: str = "median"  # median | sqrt | none
-    class_weight_clip: float = 0.0       # cap max class weight (0 = no cap)
-    # Checkpoint selection
+    class_weight_clip: float = 0.0       # cap on max class weight (0 = no cap)
     select_metric: str = "mean_dice_fg"  # mean_dice_fg | mean_dice_robust
-    robust_exclude: List[str] = field(default_factory=list)  # classes excluded from robust mean
+    robust_exclude: List[str] = field(default_factory=list)
     seed: int = 42
     device: str = "auto"                  # "auto" | "mps" | "cuda" | "cpu"
     amp: bool = False                     # keep False on Apple MPS
@@ -76,16 +75,24 @@ class Config:
     train: TrainConfig = field(default_factory=TrainConfig)
 
 
-def _merge(dc: Any, d: Optional[Dict[str, Any]]) -> None:
-    """Recursively overwrite dataclass fields from a (possibly nested) dict."""
+def _merge(dc: Any, d: Optional[Dict[str, Any]], strict: bool = True) -> None:
+    """Recursively overwrite dataclass fields from a (possibly nested) dict.
+
+    With strict=False, unknown keys are skipped with a warning instead of raising.
+    This lets us reload older checkpoints whose saved config carried fields that
+    have since been removed.
+    """
     if not d:
         return
     for key, value in d.items():
         if not hasattr(dc, key):
-            raise KeyError(f"Unknown config key {key!r} for {type(dc).__name__}")
+            if strict:
+                raise KeyError(f"Unknown config key {key!r} for {type(dc).__name__}")
+            warnings.warn(f"Ignoring unknown config key {key!r} for {type(dc).__name__}")
+            continue
         current = getattr(dc, key)
         if is_dataclass(current) and isinstance(value, dict):
-            _merge(current, value)
+            _merge(current, value, strict=strict)
         else:
             setattr(dc, key, value)
 
@@ -93,16 +100,16 @@ def _merge(dc: Any, d: Optional[Dict[str, Any]]) -> None:
 def load_config(
     path: Optional[str] = None,
     overrides: Optional[Dict[str, Any]] = None,
+    strict: bool = True,
 ) -> Config:
     """Build a Config from defaults, then a YAML file, then explicit overrides."""
     cfg = Config()
     if path:
         with open(path, "r") as f:
             data = yaml.safe_load(f) or {}
-        _merge(cfg, data)
+        _merge(cfg, data, strict=strict)
     if overrides:
-        _merge(cfg, overrides)
-    # Keep num_classes and class_names consistent.
+        _merge(cfg, overrides, strict=strict)
     cfg.data.num_classes = len(cfg.data.class_names)
     return cfg
 

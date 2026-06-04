@@ -1,30 +1,26 @@
-"""End-to-end smoke tests that run WITHOUT downloading PanNuke.
+"""Smoke tests.
 
-Pure-NumPy tests always run; torch-dependent tests skip gracefully if torch is
-absent. Run with `pytest -q` or `python -m tests.test_smoke`.
+The logic tests use small hand-made arrays or random tensors and run anywhere.
+The end-to-end training test trains for one epoch on a tiny slice of real PanNuke
+and skips if the dataset has not been downloaded. torch-dependent tests skip if
+torch is absent. Run with `pytest -q` or `python -m tests.test_smoke`.
 """
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from medseg.data import pannuke, synthetic
+from medseg.data import pannuke
 from medseg.fairness.audit import disparity
 from medseg.metrics import SegMetrics
 from medseg.monitoring.drift import DriftDetector, extract_features
 from medseg.monitoring.monitor import corrupt_images
 from medseg.quantify import quantify_mask
 
+DATA_ROOT = "data/pannuke"
+
 
 # ----------------------------- pure NumPy -----------------------------
-
-def test_synthetic_shapes():
-    imgs, msks, types = synthetic.generate_synthetic(n=8, image_size=64, seed=0)
-    assert imgs.shape == (8, 64, 64, 3) and imgs.dtype == np.uint8
-    assert msks.shape == (8, 64, 64)
-    assert msks.max() <= 5 and msks.min() >= 0
-    assert len(types) == 8
-
 
 def test_pannuke_mask_to_semantic():
     inst = np.zeros((1, 8, 8, 6), dtype=np.uint8)
@@ -64,7 +60,8 @@ def test_disparity_flagging():
 
 
 def test_drift_detector():
-    imgs, _, _ = synthetic.generate_synthetic(n=16, image_size=64, seed=1)
+    rng = np.random.default_rng(1)
+    imgs = rng.integers(0, 256, size=(16, 64, 64, 3), dtype=np.uint8)
     feats = extract_features(imgs)
     det = DriftDetector().fit(feats)
     psi_same = det.psi(feats)["overall_psi"]
@@ -110,13 +107,15 @@ def test_gradcam_and_uncertainty():
 
 def test_train_integration(tmp_path):
     pytest.importorskip("torch")
+    if not pannuke.is_available(DATA_ROOT):
+        pytest.skip(f"PanNuke not found under {DATA_ROOT}; run scripts/download_data.py")
     from medseg.config import load_config
     from medseg.train import train
 
     cfg = load_config(overrides={
-        "data": {"name": "synthetic", "synthetic_n": 16, "image_size": 64,
-                 "batch_size": 4, "num_workers": 0, "augment": False},
-        "model": {"encoder_weights": None},
+        "data": {"root": DATA_ROOT, "train_folds": [3], "test_fold": 3, "limit": 24,
+                 "image_size": 128, "batch_size": 4, "num_workers": 0, "augment": False},
+        "model": {"arch": "unet", "encoder": "resnet18", "encoder_weights": None},
         "train": {"epochs": 1, "device": "cpu", "output_dir": str(tmp_path),
                   "run_name": "smoke", "early_stop_patience": 99},
     })
@@ -131,9 +130,8 @@ if __name__ == "__main__":
 
     failures = 0
     tests = [
-        test_synthetic_shapes, test_pannuke_mask_to_semantic,
-        test_metrics_perfect_and_partial, test_quantify_degradation_index,
-        test_disparity_flagging, test_drift_detector,
+        test_pannuke_mask_to_semantic, test_metrics_perfect_and_partial,
+        test_quantify_degradation_index, test_disparity_flagging, test_drift_detector,
         test_model_forward_and_loss, test_gradcam_and_uncertainty,
     ]
     for t in tests:

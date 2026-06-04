@@ -78,7 +78,8 @@ def load_run(run_dir, device: Optional[torch.device] = None, weights: str = "bes
     """Reload a trained model + its config from an output run directory."""
     run_dir = Path(run_dir)
     ckpt = torch.load(run_dir / weights, map_location="cpu", weights_only=False)
-    cfg = load_config(overrides=ckpt["config"])
+    # strict=False so checkpoints saved with since-removed config fields still load.
+    cfg = load_config(overrides=ckpt["config"], strict=False)
     device = device or get_device(cfg.train.device)
     # Load weights from checkpoint -> no need to re-download pretrained encoder.
     model = build_model(

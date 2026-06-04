@@ -2,7 +2,7 @@
 
     python -m medseg.train --config configs/default.yaml
     python -m medseg.train --config configs/improved.yaml
-    python -m medseg.train --data-name synthetic --epochs 5 --run-name smoke
+    python -m medseg.train --config configs/default.yaml --limit 200 --run-name quick
 
 Writes everything needed to reproduce and audit a run to outputs/<run_name>/:
 best_model.pth, config.yaml, history.csv, training_curves.png, summary.json.
@@ -39,15 +39,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr", type=float)
     p.add_argument("--batch-size", type=int)
     p.add_argument("--device")
-    p.add_argument("--data-name", choices=["pannuke", "synthetic"])
     p.add_argument("--data-root")
+    p.add_argument("--limit", type=int, help="subsample N images per fold for a quick run")
     p.add_argument("--arch", help="unet | unetplusplus | deeplabv3plus | fpn | manet")
     p.add_argument("--encoder")
     p.add_argument("--encoder-weights", help="'none' for from-scratch / offline")
     p.add_argument("--seg-loss", choices=["dice", "tversky", "focal_tversky"])
     p.add_argument("--stain-aug", action="store_true", help="enable HED stain augmentation")
     p.add_argument("--run-name")
-    p.add_argument("--synthetic-n", type=int)
     p.add_argument("--num-workers", type=int)
     p.add_argument("--no-augment", action="store_true")
     p.add_argument("--no-class-weights", action="store_true",
@@ -57,12 +56,10 @@ def parse_args() -> argparse.Namespace:
 
 def build_overrides(args: argparse.Namespace) -> Dict[str, Any]:
     data, model, train = {}, {}, {}
-    if args.data_name:
-        data["name"] = args.data_name
     if args.data_root:
         data["root"] = args.data_root
-    if args.synthetic_n:
-        data["synthetic_n"] = args.synthetic_n
+    if args.limit is not None:
+        data["limit"] = args.limit
     if args.num_workers is not None:
         data["num_workers"] = args.num_workers
     if args.no_augment:
@@ -198,7 +195,6 @@ def train(cfg: Config, use_class_weights: bool = True) -> Dict[str, Any]:
                   f"{cfg.train.early_stop_patience} checks)")
             break
 
-    # Persist history + curves + summary.
     with open(run_dir / "history.csv", "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["epoch", "train_loss", "val_dice"])
         writer.writeheader()

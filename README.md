@@ -70,8 +70,7 @@ brightness, which is what an honest audit is meant to do.
 medseg/
   config.py              Typed config with YAML and CLI merge
   data/
-    pannuke.py           Load PanNuke and convert instance masks to semantic labels
-    synthetic.py         Dependency-free synthetic tissue images for tests and demo
+    pannuke.py           Load PanNuke from Hugging Face and convert masks to semantic labels
     dataset.py           Torch dataset, augmentation (incl. HED stain jitter), splits
   models/unet.py         U-Net and U-Net++ builder, fallback model, device selection
   losses.py              Dice, Tversky, and Focal-Tversky losses plus class weighting
@@ -105,13 +104,15 @@ pip install -e ".[full]"        # or: pip install -r requirements.txt
 
 On Apple Silicon, PyTorch uses the MPS (Metal) backend automatically.
 
-### 2. Smoke test, no dataset needed
+### 2. Smoke test
 
 ```
 pytest -q
 ```
 
-This generates synthetic tissue images and runs the whole pipeline end to end.
+The logic tests (mask conversion, metrics, quantification, fairness, drift, model forward,
+Grad-CAM) run anywhere. A one-epoch end-to-end training test runs on a small real-data slice
+when data/pannuke is present, and skips otherwise.
 
 ### 3. Get the data (PanNuke)
 
