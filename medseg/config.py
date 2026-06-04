@@ -27,12 +27,13 @@ class DataConfig:
     batch_size: int = 8
     num_workers: int = 2
     augment: bool = True
+    stain_aug: bool = False               # HED stain jitter on the training set
     synthetic_n: int = 64                 # only used when name == "synthetic"
 
 
 @dataclass
 class ModelConfig:
-    arch: str = "unet"
+    arch: str = "unet"                    # unet | unetplusplus | deeplabv3plus | fpn | manet
     encoder: str = "resnet34"             # any segmentation-models-pytorch encoder
     encoder_weights: Optional[str] = "imagenet"  # None -> train encoder from scratch
     pretrained: bool = True
@@ -46,8 +47,18 @@ class TrainConfig:
     optimizer: str = "adamw"
     scheduler: str = "cosine"             # "cosine" | "none"
     ce_weight: float = 1.0
-    dice_weight: float = 1.0
+    dice_weight: float = 1.0              # weight of the overlap (seg) loss term
     include_background_in_dice: bool = False
+    # Region-overlap loss + imbalance handling
+    seg_loss: str = "dice"               # dice | tversky | focal_tversky
+    tversky_alpha: float = 0.3           # FP weight (Tversky family)
+    tversky_beta: float = 0.7            # FN weight; > alpha helps rare classes
+    focal_gamma: float = 1.3333          # focal exponent for focal_tversky
+    class_weight_scheme: str = "median"  # median | sqrt | none
+    class_weight_clip: float = 0.0       # cap max class weight (0 = no cap)
+    # Checkpoint selection
+    select_metric: str = "mean_dice_fg"  # mean_dice_fg | mean_dice_robust
+    robust_exclude: List[str] = field(default_factory=list)  # classes excluded from robust mean
     seed: int = 42
     device: str = "auto"                  # "auto" | "mps" | "cuda" | "cpu"
     amp: bool = False                     # keep False on Apple MPS

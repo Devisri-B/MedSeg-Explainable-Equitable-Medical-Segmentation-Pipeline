@@ -1,5 +1,6 @@
 # Default configuration for MedSeg-RAI.
 # Override any field with `--config path/to/your.yaml` or CLI flags (see medseg/train.py).
+# These defaults reproduce the baseline run (CE + Dice, resnet34 U-Net).
 
 data:
   name: pannuke              # pannuke | synthetic
@@ -13,10 +14,11 @@ data:
   batch_size: 8
   num_workers: 2
   augment: true
+  stain_aug: false           # HED stain jitter on the training set
   synthetic_n: 64            # number of synthetic images (only when name: synthetic)
 
 model:
-  arch: unet
+  arch: unet                 # unet | unetplusplus | deeplabv3plus | fpn | manet
   encoder: resnet34          # any segmentation-models-pytorch encoder name
   encoder_weights: imagenet  # set to null for fully-offline / from-scratch training
   pretrained: true
@@ -28,8 +30,16 @@ train:
   optimizer: adamw
   scheduler: cosine          # cosine | none
   ce_weight: 1.0
-  dice_weight: 1.0
+  dice_weight: 1.0           # weight of the overlap (seg) loss term
   include_background_in_dice: false
+  seg_loss: dice             # dice | tversky | focal_tversky
+  tversky_alpha: 0.3         # FP weight (Tversky family)
+  tversky_beta: 0.7          # FN weight; > alpha helps rare classes
+  focal_gamma: 1.3333        # focal exponent for focal_tversky
+  class_weight_scheme: median  # median | sqrt | none
+  class_weight_clip: 0.0     # cap on max class weight (0 = no cap)
+  select_metric: mean_dice_fg  # mean_dice_fg | mean_dice_robust
+  robust_exclude: []         # classes excluded from the robust mean
   seed: 42
   device: auto               # auto | mps | cuda | cpu
   amp: false                 # keep false on Apple MPS
