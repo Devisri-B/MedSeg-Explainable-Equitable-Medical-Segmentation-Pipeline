@@ -1,0 +1,52 @@
+# Improved configuration — targets the rare "Dead" class and overall generalisation.
+#
+# Changes vs configs/default.yaml:
+#   * Focal-Tversky loss (beta>alpha) to punish missed pixels of rare nuclei
+#   * gentler sqrt class weights, clipped at 10 (default gave Dead weight ~45 -> unstable)
+#   * Unet++ decoder (better multi-scale fusion for clustered nuclei)
+#   * HED stain augmentation (robustness to scanner/lab stain variation)
+#   * checkpoint selection on the robust mean (excludes Dead so one near-zero
+#     class can't drive model selection), longer schedule with more patience
+#
+# Run:  python -m medseg.train --config configs/improved.yaml
+# Eval: python -m medseg.evaluate --run outputs/pannuke_improved --tta
+
+data:
+  name: pannuke
+  root: data/pannuke
+  image_size: 256
+  class_names: [Background, Neoplastic, Inflammatory, Connective, Dead, Epithelial]
+  train_folds: [1, 2]
+  test_fold: 3
+  val_fraction: 0.15
+  batch_size: 8
+  num_workers: 2
+  augment: true
+  stain_aug: true
+
+model:
+  arch: unetplusplus
+  encoder: resnet34          # try resnet50 / efficientnet-b3 for more capacity (slower)
+  encoder_weights: imagenet
+
+train:
+  epochs: 100
+  lr: 0.0003
+  weight_decay: 0.0001
+  scheduler: cosine
+  ce_weight: 1.0
+  dice_weight: 1.0
+  seg_loss: focal_tversky
+  tversky_alpha: 0.3
+  tversky_beta: 0.7
+  focal_gamma: 1.3333
+  class_weight_scheme: sqrt
+  class_weight_clip: 10.0
+  select_metric: mean_dice_robust
+  robust_exclude: [Dead]
+  seed: 42
+  device: auto
+  early_stop_patience: 20
+  val_interval: 1
+  output_dir: outputs
+  run_name: pannuke_improved
