@@ -10,6 +10,14 @@ set -e
 RUN="${1:-outputs/pannuke_improved}"
 PY="${PY:-./.venv/bin/python}"
 
+if [ ! -f "$RUN/best_model.pth" ]; then
+  echo "No checkpoint at $RUN/best_model.pth yet."
+  echo "Training writes best_model.pth only after its first validated epoch, and this"
+  echo "report is meant to run once training has FINISHED (look for the '[train] done' line)."
+  echo "Watch progress with:  tail -f outputs/resnet50_run.log"
+  exit 1
+fi
+
 echo ">> [1/5] evaluation (+TTA): per-class metrics + confusion matrix"
 $PY -m medseg.evaluate --run "$RUN" --split test --tta
 
