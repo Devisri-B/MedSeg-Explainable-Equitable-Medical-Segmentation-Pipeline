@@ -104,11 +104,12 @@ def _real_examples(root: str, n: int = 3):
     return paths
 
 
-def build_demo(run=None):
+def build_demo(run=None, example_paths=None):
     import gradio as gr
 
     model, device, size, class_names, data_root, trained = _load_model(run)
-    example_paths = _real_examples(data_root)
+    if example_paths is None:
+        example_paths = _real_examples(data_root)
 
     def predict(image, cls_choice):
         if image is None:

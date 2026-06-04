@@ -1,0 +1,10 @@
+# Space runtime (CPU). Gradio itself is provided by the Space SDK (see README sdk_version).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+segmentation-models-pytorch
+scikit-image
+numpy
+pillow
+matplotlib
+huggingface_hub
