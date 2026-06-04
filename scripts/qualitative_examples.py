@@ -1,8 +1,5 @@
 """Save a qualitative panel (input | ground truth | prediction) for a trained run.
 
-This is usually the single most compelling figure for a portfolio/resume: it shows
-the model's segmentation next to the annotation on real tissue.
-
 Usage:
     python scripts/qualitative_examples.py --run outputs/pannuke_improved --num 6 --tta
 """

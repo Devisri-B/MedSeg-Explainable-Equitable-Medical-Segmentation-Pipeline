@@ -5,7 +5,7 @@ It documents a research and portfolio model. It is not an FDA-cleared medical de
 must not be used for diagnosis or treatment.
 
 ## Model details
-- Developer: portfolio project (add your name).
+- Developer: Devi Sri Bandaru
 - Version: v0.2, trained June 2026.
 - Architecture: U-Net++ with an ImageNet-pretrained ResNet-50 encoder, built with
   segmentation-models-pytorch. The framework also supports U-Net, DeepLabV3+, FPN, and
