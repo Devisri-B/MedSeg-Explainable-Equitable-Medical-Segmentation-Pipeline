@@ -21,6 +21,16 @@ fairness audit, and quantification readouts are in [docs/RESULTS.md](docs/RESULT
 
 Input, ground truth, and prediction on test images.
 
+## Live demo
+
+The trained model runs as a Hugging Face Space. Upload an H&E patch or pick one of the
+examples, choose a Grad-CAM class, and it returns the segmentation overlay, a Seg-Grad-CAM
+explanation, a per-pixel uncertainty map, and the per-class quantification table.
+
+![Live demo on Hugging Face Spaces](assets/Huggingface_interface.png)
+
+Try it: https://huggingface.co/spaces/Devisri515/medseg-rai
+
 ## What changed from the baseline
 
 | stage | setup | mean fg Dice | Dead Dice |
