@@ -43,9 +43,9 @@ gentler, clipped class weights more than doubled its Dice, and a larger encoder 
 the rest. The fairness audit then flagged genuine gaps across tissue types and stain
 brightness, which is what an honest audit is meant to do.
 
-## How it maps to the role it was built for
+## Main Features
 
-| Requirement | Where it lives in this repo |
+| Feature | Where it lives in this repo |
 |---|---|
 | Automated semantic segmentation that quantifies and classifies several complex classes at the microscopic level | [`medseg/train.py`](medseg/train.py), [`medseg/models/`](medseg/models), [`medseg/quantify.py`](medseg/quantify.py) |
 | Evaluate healthy versus degraded biological states for therapeutic efficacy | [`medseg/quantify.py`](medseg/quantify.py), the tissue-degradation index |
