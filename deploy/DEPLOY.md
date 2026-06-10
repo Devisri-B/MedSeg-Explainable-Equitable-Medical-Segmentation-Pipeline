@@ -10,15 +10,15 @@ You are already logged in (`hf auth login`). From the repo root:
 
 ```
 python deploy/deploy_hf.py \
-    --model-repo Devisri515/medseg-rai-pannuke \
-    --space      Devisri515/medseg-rai \
+    --model-repo Userid/medseg-rai-pannuke \
+    --space      Userid/medseg-rai \
     --weights    outputs/pannuke_resnet50/best_model.pth \
     --data-root  data/pannuke
 ```
 
 This creates two public repos under your account:
-- model: https://huggingface.co/Devisri515/medseg-rai-pannuke  (holds best_model.pth)
-- space: https://huggingface.co/spaces/Devisri515/medseg-rai   (the live demo)
+- model: https://huggingface.co/Userid/medseg-rai-pannuke  (holds best_model.pth)
+- space: https://huggingface.co/spaces/Userid/medseg-rai   (the live demo)
 
 The Space builds for a few minutes, then goes live. Add `--private` to keep both private.
 

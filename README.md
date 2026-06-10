@@ -8,8 +8,6 @@ comes with Grad-CAM explanations, per-pixel uncertainty, a per-subgroup fairness
 audit, data-drift monitoring, and governance documents mapped to the IEEE ethical-AI
 pillars and FDA Good Machine Learning Practice.
 
-Note: this is a research and portfolio project. It is not a medical device and is not
-validated for clinical or diagnostic use.
 
 ## Results in one line
 
@@ -94,15 +92,13 @@ tests/                   Smoke test that runs without downloading data
 
 ## Quickstart
 
-### 1. Environment (Apple Silicon or any machine)
+### 1. Environment 
 
 ```
 python -m venv .venv && source .venv/bin/activate
 pip install -U pip
 pip install -e ".[full]"        # or: pip install -r requirements.txt
 ```
-
-On Apple Silicon, PyTorch uses the MPS (Metal) backend automatically.
 
 ### 2. Smoke test
 
@@ -179,18 +175,6 @@ modality-agnostic.
 
 See [docs/ETHICS_IEEE.md](docs/ETHICS_IEEE.md) and [docs/REGULATORY.md](docs/REGULATORY.md).
 
-## Talking points for an interview
-
-- I raised mean foreground Dice from 0.55 to 0.64 and more than doubled the hardest
-  class (necrotic nuclei, 0.15 to 0.36) by switching to a Focal-Tversky loss and tuning
-  class weighting, then added encoder capacity and test-time augmentation.
-- I audit Dice across all 19 tissue types and across stain brightness, and I flag the
-  groups where the model underperforms (Uterus, and dark-stained slides), which is how
-  you catch algorithmic bias before it reaches patients.
-- I quantify a tissue-degradation index from the necrotic-cell class, the kind of
-  readout used to compare healthy and degraded tissue and to track treatment response.
-- I treated the model as one part of a regulated system: data provenance, intended-use
-  limits, fairness evaluation, explainability, and drift monitoring tied to thresholds.
 
 ## License and citation
 

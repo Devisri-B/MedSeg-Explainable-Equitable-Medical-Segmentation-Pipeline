@@ -16,5 +16,5 @@ albumentations>=1.4
 huggingface_hub>=0.24
 datasets>=2.14            # auto-download PanNuke from the Hugging Face Hub
 
-# --- Demo app (optional) ---
+# --- Demo app ---
 gradio>=4.0
