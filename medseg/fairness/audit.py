@@ -137,9 +137,9 @@ def _markdown(report: Dict[str, object]) -> str:
     for attr, d in report["attributes"].items():
         if not d:
             continue
-        verdict = "⚠️ DISPARITY FLAGGED" if d["flagged"] else "✅ within 4/5ths comfort zone"
+        verdict = "DISPARITY FLAGGED" if d["flagged"] else "within the 4/5ths comfort zone"
         lines += [
-            f"## By {attr}  —  {verdict}",
+            f"## By {attr}: {verdict}",
             "",
             f"- groups: {d['n_groups']}  |  best **{d['best']:.3f}** ({d['best_group']})  "
             f"|  worst **{d['worst']:.3f}** ({d['worst_group']})",
@@ -153,7 +153,7 @@ def _markdown(report: Dict[str, object]) -> str:
             lines.append(f"| {g} | {d['per_group'][g]:.3f} | {n} |")
         lines.append("")
     lines += [
-        "## Interpretation (IEEE — Algorithmic Bias)",
+        "## Interpretation (IEEE Algorithmic Bias)",
         "",
         "A worst/best ratio below 0.8 indicates the model underserves a subgroup by "
         "more than 20% relative Dice. Mitigations to consider: class/group reweighting, "

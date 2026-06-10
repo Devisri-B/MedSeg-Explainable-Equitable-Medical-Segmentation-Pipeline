@@ -4,7 +4,7 @@
 incoming slides) and raises alerts when foreground Dice degrades past absolute or
 relative thresholds, or when the data-drift PSI crosses its limit. The `main()`
 demo simulates progressive staining/scanner drift on the held-out set so you can
-*watch* accuracy fall and the alerts trigger — the story you tell for "rigorous
+watch accuracy fall and the alerts trigger, the story you tell for "rigorous
 model performance monitoring".
 """
 from __future__ import annotations

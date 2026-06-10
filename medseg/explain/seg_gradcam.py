@@ -3,7 +3,7 @@
 Classic Grad-CAM explains a single classification logit. For segmentation we sum
 the target-class logit over a region of interest (by default, all pixels predicted
 as that class) and backprop that scalar to a decoder feature map. The result is a
-heatmap of "which input regions drove this class here" — directly answering the
+heatmap of "which input regions drove this class here", directly answering the
 "decision explainability" requirement.
 
 Reference: Vinogradova, Dibrov & Myers, "Towards Interpretable Semantic

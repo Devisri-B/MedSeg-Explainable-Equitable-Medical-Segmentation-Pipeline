@@ -45,8 +45,8 @@ class TverskyLoss(nn.Module):
     """Multi-class Tversky loss.
 
     TI = TP / (TP + alpha*FP + beta*FN). alpha weights false-positives, beta
-    weights false-negatives. Set beta > alpha to punish missed (FN) pixels harder
-    — the right bias for rare structures the model tends to under-segment.
+    weights false-negatives. Set beta > alpha to punish missed (FN) pixels harder,
+    which is the right bias for rare structures the model tends to under-segment.
     """
 
     def __init__(self, alpha: float = 0.3, beta: float = 0.7,

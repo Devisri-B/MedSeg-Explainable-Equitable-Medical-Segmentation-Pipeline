@@ -102,7 +102,7 @@ def prepare_from_hf(
     folds: Sequence[int] = (1, 2, 3),
     max_per_fold: int | None = None,
 ) -> bool:
-    """Download PanNuke via the 🤗 datasets library and cache it as our .npy format.
+    """Download PanNuke via the Hugging Face datasets library and cache it as our .npy format.
 
     Converts per-instance masks + category labels into a single semantic label map
     per image, then writes images.npy / masks.npy / types.npy under root/fold{n}/.
@@ -122,7 +122,7 @@ def prepare_from_hf(
             print(f"[pannuke] fold{fold} already cached at {out}")
             continue
         out.mkdir(parents=True, exist_ok=True)
-        print(f"[pannuke] loading {repo_id} split fold{fold} via 🤗 datasets ...")
+        print(f"[pannuke] loading {repo_id} split fold{fold} via Hugging Face datasets ...")
         ds = load_dataset(repo_id, split=f"fold{fold}")
         tissue_names = ds.features["tissue"].names
         n = len(ds) if max_per_fold is None else min(len(ds), max_per_fold)
@@ -163,7 +163,7 @@ def download(root: str | Path, repo_id: str | None = None, max_per_fold: int | N
 
     print(
         "\n[pannuke] Could not auto-download. Options:\n"
-        "  1) pip install datasets   (then re-run — pulls RationAI/PanNuke automatically)\n"
+        "  1) pip install datasets   (then re-run, which pulls RationAI/PanNuke automatically)\n"
         f"  2) Manual: download the 3 folds from {_OFFICIAL_URL}\n"
         f"     and place images.npy / masks.npy / types.npy under {root}/fold1 (etc.)\n"
     )

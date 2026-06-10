@@ -28,7 +28,7 @@ def main() -> None:
         print(f"[ok] semantic label range: {semantic.min()}..{semantic.max()} "
               f"(0=Background ... 5=Epithelial)")
     else:
-        print("\n[!] Data not found after download step — see the instructions above.")
+        print("\n[!] Data not found after download step. See the instructions above.")
 
 
 if __name__ == "__main__":
