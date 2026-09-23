@@ -61,9 +61,3 @@ defined response, whether that is recalibrate, retrain, or roll back.
   real build, and ISO 13485 covers the quality management system.
 - This repo's reproducible configs, versioned checkpoints, tests, and documentation are the kinds
   of artifacts those standards expect, scaled to a portfolio.
-
-## Short version for an interview
-I treated the model as one component of a regulated system: data provenance (Datasheet),
-intended-use limits (Model Card), bias evaluation (fairness audit) that flagged real subgroup
-gaps, human-in-the-loop explainability, and post-market drift monitoring tied to defined
-thresholds. That is essentially the skeleton of an FDA GMLP and PCCP story.
