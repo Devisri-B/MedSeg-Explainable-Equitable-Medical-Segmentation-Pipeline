@@ -1,0 +1,248 @@
+{
+  "n_images": 622,
+  "n_tissues": 19,
+  "brightness_counts": {
+    "bright": 305,
+    "medium": 291,
+    "dark": 26
+  },
+  "dice_gap_by_tissue": {
+    "n_groups": 19,
+    "best": 0.8150355733866913,
+    "worst": 0.6038204073559166,
+    "best_group": "Bladder",
+    "worst_group": "Bile Duct",
+    "gap": 0.21121516603077473,
+    "ratio": 0.7408515984730346,
+    "cv": 0.09379461332851954
+  },
+  "stability_gap_by_tissue": {
+    "n_groups": 19,
+    "best": 0.8775753968605187,
+    "worst": 0.7076065878442335,
+    "best_group": "Testis",
+    "worst_group": "Bladder",
+    "gap": 0.1699688090162852,
+    "ratio": 0.8063199929893887,
+    "cv": 0.06849412996640203
+  },
+  "tests": {
+    "tissue|dice_c": {
+      "H": 68.87562539901762,
+      "p": 6.996755988283425e-08,
+      "groups": 19
+    },
+    "tissue|stability": {
+      "H": 41.51937918050908,
+      "p": 0.0012901597305777915,
+      "groups": 19
+    },
+    "tissue|stability_cam_dec": {
+      "H": 72.36713651601849,
+      "p": 1.7895897020761724e-08,
+      "groups": 19
+    },
+    "tissue|gain_region_hires_enc4": {
+      "H": 43.36145765502215,
+      "p": 0.0007112636380756264,
+      "groups": 19
+    },
+    "tissue|gain_region_gxi": {
+      "H": 54.66494644368777,
+      "p": 1.4448943654578158e-05,
+      "groups": 19
+    },
+    "tissue|agree_logit_hires_dec": {
+      "H": 90.59351384955107,
+      "p": 1.1296312249138029e-11,
+      "groups": 19
+    },
+    "tissue|entropy": {
+      "H": 75.6363370276647,
+      "p": 4.9145117414095874e-09,
+      "groups": 19
+    },
+    "brightness|dice_c": {
+      "H": 10.61643771516124,
+      "p": 0.004950736836699349,
+      "groups": 3
+    },
+    "brightness|stability": {
+      "H": 19.734229191106806,
+      "p": 5.1852127331716566e-05,
+      "groups": 3
+    },
+    "brightness|stability_cam_dec": {
+      "H": 76.54195568066302,
+      "p": 2.3940075014467335e-17,
+      "groups": 3
+    },
+    "brightness|gain_region_hires_enc4": {
+      "H": 14.212521917735103,
+      "p": 0.0008199551134760887,
+      "groups": 3
+    },
+    "brightness|gain_region_gxi": {
+      "H": 5.629963660237536,
+      "p": 0.05990580721162559,
+      "groups": 3
+    },
+    "brightness|agree_logit_hires_dec": {
+      "H": 71.6136799019614,
+      "p": 2.8137596334107895e-16,
+      "groups": 3
+    },
+    "brightness|entropy": {
+      "H": 8.450835049728312,
+      "p": 0.014619229543324416,
+      "groups": 3
+    }
+  },
+  "dark_vs_bright": {
+    "dice_c": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": 0.750797904138664,
+      "median_bright": 0.7705577918343876,
+      "p": 0.21677683543717818,
+      "prob_dark_greater": 0.42698612862547286
+    },
+    "stability": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": 0.9538033350008985,
+      "median_bright": 0.8345489784551786,
+      "p": 0.002656478297907338,
+      "prob_dark_greater": 0.6775535939470366
+    },
+    "stability_cam_dec": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": 0.9882850835670499,
+      "median_bright": 0.924072370959328,
+      "p": 5.1142812639617226e-08,
+      "prob_dark_greater": 0.8218158890290038
+    },
+    "gain_region_hires_enc4": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": -0.488926145521115,
+      "median_bright": -0.3957178468505542,
+      "p": 0.04051380317971091,
+      "prob_dark_greater": 0.37894073139974777
+    },
+    "gain_region_gxi": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": -0.0874061412954082,
+      "median_bright": -0.1041520884027704,
+      "p": 0.6046521546622443,
+      "prob_dark_greater": 0.5306431273644389
+    },
+    "agree_logit_hires_dec": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": 0.9260929576023954,
+      "median_bright": 0.7627373889666578,
+      "p": 1.3343778026400186e-06,
+      "prob_dark_greater": 0.78562421185372
+    },
+    "entropy": {
+      "n_dark": 26,
+      "n_bright": 305,
+      "median_dark": 0.25221411138772964,
+      "median_bright": 0.2203424572944641,
+      "p": 0.45299563378156893,
+      "prob_dark_greater": 0.5443883984867591
+    }
+  },
+  "spearman_group_dice_vs_group_stability_tissue": -0.18596491228070175,
+  "failure_detection": {
+    "n": 622,
+    "n_fail": 71,
+    "threshold": 0.5,
+    "sets": {
+      "uncertainty": {
+        "auroc": 0.8640627795812991,
+        "auroc_lo": 0.8236532849465134,
+        "auroc_hi": 0.9009039093642911,
+        "gain_over_uncertainty": 0.0,
+        "gain_lo": 0.0,
+        "gain_hi": 0.0
+      },
+      "uncertainty + stain-shift prediction stability": {
+        "auroc": 0.8643183967689987,
+        "auroc_lo": 0.8241092041267558,
+        "auroc_hi": 0.9009186137283736,
+        "gain_over_uncertainty": 0.0002556171876996194,
+        "gain_lo": -0.0032279517512321166,
+        "gain_hi": 0.003939801356877997
+      },
+      "explanation signals only": {
+        "auroc": 0.7689987474757802,
+        "auroc_lo": 0.7000516324498938,
+        "auroc_hi": 0.8299627288083479,
+        "gain_over_uncertainty": -0.09506403210551884,
+        "gain_lo": -0.157186489389267,
+        "gain_hi": -0.03867155405208028
+      },
+      "uncertainty + explanation": {
+        "auroc": 0.8584647631706757,
+        "auroc_lo": 0.81724477311904,
+        "auroc_hi": 0.9010703707661724,
+        "gain_over_uncertainty": -0.005598016410623408,
+        "gain_lo": -0.033032251895851315,
+        "gain_hi": 0.01881033226654177
+      },
+      "uncertainty + stain-shift + explanation": {
+        "auroc": 0.8576979116075765,
+        "auroc_lo": 0.816121973976932,
+        "auroc_hi": 0.9004963444672981,
+        "gain_over_uncertainty": -0.006364867973722599,
+        "gain_lo": -0.03552794399689964,
+        "gain_hi": 0.01858151517862826
+      },
+      "all of the above + deletion test": {
+        "auroc": 0.8548094373865699,
+        "auroc_lo": 0.8068589810150043,
+        "auroc_hi": 0.9005593104635262,
+        "gain_over_uncertainty": -0.009253342194729175,
+        "gain_lo": -0.040610316236000615,
+        "gain_hi": 0.020983094113042666
+      }
+    },
+    "single_spearman_with_dice": {
+      "conf_region": 0.6942716874460116,
+      "entropy_region": -0.68121851386364,
+      "stain_pred_dice": 0.517810412374615,
+      "region_frac": 0.3775857800996298,
+      "conc|hires@dec": 0.374084892898029,
+      "loc_enrich|hires@dec": -0.3732305492584429,
+      "agree|cam-hires": 0.3718881659914568,
+      "agree_logit|hires@dec": 0.36834491650775414,
+      "agree_logit|cam@dec": 0.33474079984564387,
+      "conc|hires@enc4": 0.32328802687266944,
+      "loc_enrich|logit": -0.31275333294126534,
+      "loc_enrich|cam@dec": -0.310450330493513,
+      "conc|cam@enc4": 0.3041427699013743,
+      "stab_rho|hires@enc4": 0.29316566849657294,
+      "conc|logit": 0.28242974424669764,
+      "conc|cam@dec": 0.27948330349190315,
+      "stab_rho|logit": 0.2732202031123004,
+      "stab_rho|cam@dec": 0.26220063784465597,
+      "conc|gxi": 0.2619281899417861,
+      "stab_rho|hires@dec": 0.225486800596042,
+      "stab_rho|cam@enc4": 0.18682394822527176,
+      "entropy_img": -0.16956566809660217,
+      "loc_enrich|hires@enc4": -0.15511107432766993,
+      "loc_enrich|gxi": -0.1312431368394001,
+      "stab_rho|gxi": -0.12834038326155248,
+      "loc_enrich|cam@enc4": -0.10135886865786212,
+      "agree|hires-gxi": -0.09791959558539857,
+      "agree_logit|gxi": -0.05282315808351154,
+      "agree|cam-gxi": -0.052397307850692354,
+      "agree_logit|hires@enc4": -0.013673413123092223,
+      "agree_logit|cam@enc4": 0.0046347057748801984
+    }
+  }
+}
