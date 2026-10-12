@@ -159,6 +159,38 @@ python -m medseg.monitoring.monitor --run outputs/pannuke_resnet50
 python -m medseg.app.gradio_app     --run outputs/pannuke_resnet50
 ```
 
+### 7. Explanation audit (new)
+
+Are the heatmaps trustworthy, and equally so for every tissue and stain group? This audit measures
+six attribution methods (Seg-Grad-CAM, HiResCAM-style, Gradient x Input, LRP) at several depths
+against a gradient-free control, on three models and two datasets. See
+[docs/EXPLANATION_AUDIT.md](docs/EXPLANATION_AUDIT.md) for the method, all numbers and the limits.
+
+```
+python -m medseg.explain.xai_audit       --run outputs/pannuke_resnet50 --per-tissue 34 --lrp
+python -m medseg.explain.xai_sanity      --run outputs/pannuke_resnet50 --n 40
+python -m medseg.explain.xai_depth_sweep --run outputs/pannuke_resnet50 --n 100
+python -m medseg.explain.xai_analysis    --run outputs/pannuke_resnet50
+python -m medseg.explain.xai_replication --out outputs/replication --studies A,B,C,D
+python -m medseg.viz.explorer            --run outputs/pannuke_resnet50
+```
+
+Measured on 3,180 image audits: PanNuke fold 3 with U-Net++/ResNet-50 (659), fold 1 with FPN/ResNet-18
+(1,333), fold 2 with U-Net/ResNet-18 (988), and 200 MoNuSeg tiles:
+
+- Decoder-level maps re-draw the prediction: Seg-Grad-CAM correlates 0.95 to 0.99 with the model's
+  own score map and its deletion gain is within 0.013 of the control's in every study.
+- Encoder-level maps and LRP are worse than hiding random pixels inside the region in all four studies.
+- Stain-shift stability is higher in dark images in all four studies (pooled probability 0.73) with
+  no Dice difference; most of the gap survives adjustment for map copying in three of four studies.
+- Whether explanation signals add to uncertainty for failure detection depends on the model:
+  no gain on the strongest model (change -0.010), +0.034 and +0.014 on two weaker ones.
+- Limits: LRP relevance is not conserved here, two of the three models are short-trained, dark groups
+  hold 33 to 63 images per PanNuke study.
+
+Tables and figures are written to `<run>/xai_audit/analysis/` and `outputs/replication/`; the
+interactive page is `<run>/xai_audit/explorer.html`.
+
 ## How this transfers to other healthcare roles
 
 The organ is incidental. The competencies are general. The same pipeline maps onto:
