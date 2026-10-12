@@ -29,3 +29,6 @@ env/
 
 # Allow small demo assets to be committed
 !assets/**
+
+# Trained checkpoints are kept (tracked with Git LFS, see .gitattributes)
+!/checkpoints/*.pth
