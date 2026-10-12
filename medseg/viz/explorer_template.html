@@ -1,0 +1,242 @@
+<title>Explanation Audit Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one working surface. Filters on the left, the scatter in the middle,
+   the method scorecard on the right, and a strip showing the selected case below.
+   Colours come from H&E staining: hematoxylin indigo is the accent, eosin rose marks failures. */
+:root {
+  --bg: #f6f5fa;
+  --panel: #ffffff;
+  --fg: #1d1b2e;
+  --muted: #6b6882;
+  --line: #dedcec;
+  --accent: #3a3d9c;        /* hematoxylin */
+  --accent-soft: #e6e7f7;
+  --fail: #c2417a;          /* eosin */
+  --fail-soft: #f8e3ee;
+  --ok: #2b7a6b;
+  --b-dark: #2a2f86;
+  --b-medium: #9a5fa8;
+  --b-bright: #e6a3b8;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14131f; --panel: #1d1b2d; --fg: #ecebf5; --muted: #a09db8; --line: #35324d;
+    --accent: #8f93f0; --accent-soft: #2a2b55; --fail: #f07ab0; --fail-soft: #3d2236; --ok: #5fcbb6;
+    --b-dark: #6f76f5; --b-medium: #c28ad0; --b-bright: #f3c0cf; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14131f; --panel: #1d1b2d; --fg: #ecebf5; --muted: #a09db8; --line: #35324d;
+  --accent: #8f93f0; --accent-soft: #2a2b55; --fail: #f07ab0; --fail-soft: #3d2236; --ok: #5fcbb6;
+  --b-dark: #6f76f5; --b-medium: #c28ad0; --b-bright: #f3c0cf; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; padding-inline: 16px; padding-block: 16px 28px; }
+.wrap { max-width: 1240px; margin-inline: auto; display: grid; gap: 14px; }
+header { display: grid; gap: 6px; }
+h1 { font-size: 1.35rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--muted); max-width: 78ch; margin: 0; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; padding-block: 2px; font-family: var(--font-mono); font-size: 0.82rem; }
+.stats b { font-weight: 500; color: var(--accent); }
+.grid { display: grid; grid-template-columns: minmax(210px, 260px) minmax(0, 1fr) minmax(220px, 300px); gap: 14px; align-items: start; }
+@media (max-width: 960px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; min-width: 0; }
+.panel h2 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+button, select { font: inherit; color: inherit; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
+.tissues { display: grid; gap: 2px; max-height: 580px; overflow-y: auto; }
+.trow { display: grid; grid-template-columns: minmax(0, 1fr) 70px 34px; gap: 8px; align-items: center; border: 0; background: none; text-align: left; padding: 3px 6px; border-radius: 4px; cursor: pointer; }
+.trow:hover { background: var(--accent-soft); }
+.trow[aria-pressed="true"] { background: var(--accent-soft); outline: 1px solid var(--accent); }
+.trow span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { height: 7px; background: var(--line); border-radius: 4px; position: relative; overflow: hidden; }
+.bar > b { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+.num { font-family: var(--font-mono); font-size: 0.78rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 8px; }
+.tools label { color: var(--muted); font-size: 0.82rem; }
+select { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; max-width: 100%; }
+svg text { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+#plot { width: 100%; height: auto; display: block; }
+.pt { cursor: pointer; }
+.pt:focus-visible { outline: none; stroke: var(--fg); stroke-width: 2; }
+.note { color: var(--muted); font-size: 0.8rem; margin: 6px 0 0; }
+.score { display: grid; gap: 10px; }
+.srow { display: grid; gap: 3px; }
+.srow .lab { display: flex; justify-content: space-between; gap: 8px; }
+.srow .lab span:last-child { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.subhead { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 8px 0 -2px; }
+.case { display: grid; gap: 8px; }
+.case .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--font-mono); font-size: 0.8rem; }
+.tag { padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; }
+.tag.fail { background: var(--fail-soft); color: var(--fail); }
+.tag.ok { background: var(--accent-soft); color: var(--accent); }
+.strip { overflow-x: auto; }
+.strip-inner { min-width: 760px; }
+.labels { display: grid; grid-template-columns: repeat(9, 1fr); font-size: 0.7rem; color: var(--muted); text-align: center; padding-bottom: 3px; }
+.strip img { width: 100%; display: block; border-radius: 4px; image-rendering: auto; }
+.empty { color: var(--muted); padding: 18px 0; }
+footer { color: var(--muted); font-size: 0.78rem; max-width: 100ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Explanation Audit Explorer</h1>
+    <p class="sub" id="lede"></p>
+    <div class="stats" id="stats" aria-live="polite"></div>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-label="Filters">
+      <h2>Stain brightness</h2>
+      <div class="chips" id="bchips"></div>
+      <h2>Tissue (bar: Dice of explained class)</h2>
+      <div class="tissues" id="tissues"></div>
+    </section>
+
+    <section class="panel" aria-label="Scatter">
+      <div class="tools">
+        <label for="xsel">Explanation signal</label>
+        <select id="xsel"></select>
+        <button class="chip" id="failtog" aria-pressed="false">Failures only</button>
+      </div>
+      <svg id="plot" viewBox="0 0 640 400" role="img" aria-label="Segmentation quality against the chosen explanation signal"></svg>
+      <p class="note" id="plotnote"></p>
+    </section>
+
+    <section class="panel" aria-label="Methods">
+      <h2>Method scorecard (filtered images)</h2>
+      <div class="score" id="score"></div>
+    </section>
+  </div>
+
+  <section class="panel case" aria-label="Selected case">
+    <h2>Selected case</h2>
+    <div id="case"><div class="empty">Click a point in the scatter to see that image, the model's prediction and each explanation.</div></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const FAIL = DATA.fail_threshold;
+const state = { tissue: null, bright: new Set(["dark", "medium", "bright"]), failOnly: false, x: DATA.default_x, sel: null };
+const BCOL = { dark: "var(--b-dark)", medium: "var(--b-medium)", bright: "var(--b-bright)" };
+const $ = (id) => document.getElementById(id);
+const fmt = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v)) ? "–" : v.toFixed(d);
+const mean = (a) => { const b = a.filter((v) => v !== null && !Number.isNaN(v)); return b.length ? b.reduce((s, v) => s + v, 0) / b.length : NaN; };
+function rank(a) { const idx = a.map((v, i) => [v, i]).sort((p, q) => p[0] - q[0]); const r = new Array(a.length); let i = 0; while (i < idx.length) { let j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++; const avg = (i + j) / 2 + 1; for (let k = i; k <= j; k++) r[idx[k][1]] = avg; i = j + 1; } return r; }
+function spearman(x, y) { const p = x.map((v, i) => [v, y[i]]).filter((q) => q[0] != null && q[1] != null && !Number.isNaN(q[0]) && !Number.isNaN(q[1])); if (p.length < 8) return NaN; const a = rank(p.map((q) => q[0])), b = rank(p.map((q) => q[1])); const ma = mean(a), mb = mean(b); let n = 0, da = 0, db = 0; for (let i = 0; i < a.length; i++) { n += (a[i] - ma) * (b[i] - mb); da += (a[i] - ma) ** 2; db += (b[i] - mb) ** 2; } return n / Math.sqrt(da * db); }
+
+function filtered() {
+  return DATA.rows.filter((r) => state.bright.has(r.b) && (!state.tissue || r.t === state.tissue) && (!state.failOnly || r.d < FAIL));
+}
+
+function build() {
+  $("lede").textContent = DATA.lede;
+  const xs = $("xsel");
+  DATA.signals.forEach((s) => { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; xs.appendChild(o); });
+  xs.value = state.x;
+  xs.onchange = () => { state.x = xs.value; draw(); };
+  $("failtog").onclick = (e) => { state.failOnly = !state.failOnly; e.currentTarget.setAttribute("aria-pressed", state.failOnly); draw(); };
+  const bc = $("bchips");
+  ["dark", "medium", "bright"].forEach((b) => {
+    const c = document.createElement("button"); c.className = "chip"; c.setAttribute("aria-pressed", "true");
+    c.innerHTML = `<i style="background:${BCOL[b]}"></i>${b}`;
+    c.onclick = () => { state.bright.has(b) ? state.bright.delete(b) : state.bright.add(b); c.setAttribute("aria-pressed", state.bright.has(b)); draw(); };
+    bc.appendChild(c);
+  });
+  $("foot").textContent = DATA.footer;
+  draw();
+}
+
+function drawTissues() {
+  const by = {};
+  DATA.rows.filter((r) => state.bright.has(r.b)).forEach((r) => { (by[r.t] = by[r.t] || []).push(r); });
+  const names = Object.keys(by).sort((a, b) => mean(by[a].map((r) => r.d)) - mean(by[b].map((r) => r.d)));
+  const box = $("tissues"); box.innerHTML = "";
+  names.forEach((t) => {
+    const d = mean(by[t].map((r) => r.d));
+    const btn = document.createElement("button"); btn.className = "trow"; btn.setAttribute("aria-pressed", state.tissue === t);
+    btn.innerHTML = `<span title="${t}">${t}</span><span class="bar"><b style="width:${Math.max(0, Math.min(1, d)) * 100}%"></b></span><span class="num">${fmt(d)}</span>`;
+    btn.onclick = () => { state.tissue = state.tissue === t ? null : t; draw(); };
+    box.appendChild(btn);
+  });
+}
+
+function drawPlot(rows) {
+  const W = 640, H = 400, m = { l: 46, r: 14, t: 12, b: 40 };
+  const key = state.x, sig = DATA.signals.find((s) => s.key === key);
+  const pts = rows.map((r) => ({ r, x: r.v[key] })).filter((p) => p.x !== null && p.x !== undefined && !Number.isNaN(p.x));
+  const allx = DATA.rows.map((r) => r.v[key]).filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
+  let lo = Math.min(...allx), hi = Math.max(...allx); if (lo === hi) { lo -= 0.5; hi += 0.5; }
+  const pad = (hi - lo) * 0.04; lo -= pad; hi += pad;
+  const sx = (v) => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
+  const sy = (v) => H - m.b - v * (H - m.t - m.b);
+  let s = "";
+  for (let g = 0; g <= 4; g++) { const v = g / 4; s += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)" stroke-width="1"/><text x="${m.l - 6}" y="${sy(v) + 3}" text-anchor="end">${v.toFixed(2)}</text>`; }
+  for (let g = 0; g <= 4; g++) { const v = lo + (hi - lo) * g / 4; s += `<text x="${sx(v)}" y="${H - m.b + 15}" text-anchor="middle">${v.toFixed(2)}</text>`; }
+  s += `<rect x="${m.l}" y="${sy(FAIL)}" width="${W - m.l - m.r}" height="${H - m.b - sy(FAIL)}" fill="var(--fail-soft)" opacity="0.55"/>`;
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(FAIL)}" y2="${sy(FAIL)}" stroke="var(--fail)" stroke-dasharray="4 3"/><text x="${W - m.r - 4}" y="${sy(FAIL) - 4}" text-anchor="end" style="fill:var(--fail)">failure: Dice below ${FAIL}</text>`;
+  s += `<text x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle">${sig.label}</text>`;
+  s += `<text transform="translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle">Dice of the explained class</text>`;
+  pts.forEach((p, i) => {
+    const sel = state.sel === p.r.i;
+    s += `<circle class="pt" tabindex="0" data-i="${p.r.i}" cx="${sx(p.x).toFixed(1)}" cy="${sy(Math.max(0, Math.min(1, p.r.d))).toFixed(1)}" r="${sel ? 6.5 : 3.6}" fill="${BCOL[p.r.b]}" fill-opacity="${sel ? 1 : 0.78}" stroke="${sel ? "var(--fg)" : "var(--panel)"}" stroke-width="${sel ? 2 : 0.8}"><title>${p.r.t} · Dice ${fmt(p.r.d)}</title></circle>`;
+  });
+  const svg = $("plot"); svg.innerHTML = s;
+  svg.querySelectorAll(".pt").forEach((c) => { const go = () => { state.sel = Number(c.dataset.i); draw(); }; c.onclick = go; c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }; });
+  const rho = spearman(pts.map((p) => p.x), pts.map((p) => p.r.d));
+  $("plotnote").textContent = `Spearman correlation with Dice across the ${pts.length} images shown: ${fmt(rho)}. ${sig.hint}`;
+}
+
+function drawScore(rows) {
+  const box = $("score"); box.innerHTML = "";
+  const defs = [
+    ["agree_logit|", "Re-draws the model's own score map (rank correlation)", 0, 1, "Lower is more independent of the prediction"],
+    ["stab_rho|", "Stability under a small stain shift (rank correlation)", 0, 1, "Higher is more stable"],
+    ["del_gain_region|", "Deletion gain over region-random (AUC difference)", -0.3, 0.3, "Higher means the ranking inside the region matters"],
+  ];
+  defs.forEach(([pre, title, lo, hi, hint]) => {
+    const h = document.createElement("div"); h.className = "subhead"; h.textContent = title; box.appendChild(h);
+    DATA.methods.forEach((m) => {
+      const k = pre + m.key; if (pre === "agree_logit|" && m.key === "logit") return;
+      const v = mean(rows.map((r) => r.v[k]));
+      const w = Number.isNaN(v) ? 0 : Math.max(0, Math.min(1, (v - lo) / (hi - lo))) * 100;
+      const el = document.createElement("div"); el.className = "srow";
+      el.innerHTML = `<div class="lab"><span>${m.label}</span><span>${fmt(v)}</span></div><div class="bar"><b style="width:${w}%"></b></div>`;
+      box.appendChild(el);
+    });
+    const p = document.createElement("div"); p.className = "note"; p.textContent = hint; box.appendChild(p);
+  });
+}
+
+function drawCase() {
+  const box = $("case");
+  const r = DATA.rows.find((x) => x.i === state.sel);
+  if (!r) return;
+  const fail = r.d < FAIL;
+  let html = `<div class="meta"><span>${r.t}</span><span>${r.b} stain</span><span>Dice ${fmt(r.d)}</span><span>uncertainty ${fmt(r.v.entropy_region)}</span><span class="tag ${fail ? "fail" : "ok"}">${fail ? "segmentation failure" : "segmentation ok"}</span></div>`;
+  if (r.img) {
+    html += `<div class="strip"><div class="strip-inner"><div class="labels">${DATA.tile_labels.map((l) => `<span>${l}</span>`).join("")}</div><img alt="Image, ground truth, prediction and explanation maps for this case" src="data:image/jpeg;base64,${r.img}"></div></div>`;
+  } else {
+    html += `<div class="empty">This image was audited but its picture is not included in the page. Cases with pictures are the lowest-, highest- and a random-Dice image from each tissue.</div>`;
+  }
+  box.innerHTML = html;
+}
+
+function draw() {
+  const rows = filtered();
+  const fails = rows.filter((r) => r.d < FAIL).length;
+  $("stats").innerHTML = `<span>images <b>${rows.length}</b></span><span>mean Dice <b>${fmt(mean(rows.map((r) => r.d)))}</b></span><span>failures <b>${rows.length ? Math.round(100 * fails / rows.length) : 0}%</b></span>${state.tissue ? `<span>tissue <b>${state.tissue}</b></span>` : ""}`;
+  drawTissues(); drawPlot(rows); drawScore(rows); drawCase();
+}
+build();
+</script>
