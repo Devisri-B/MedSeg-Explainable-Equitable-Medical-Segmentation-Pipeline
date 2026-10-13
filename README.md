@@ -1,7 +1,4 @@
-# Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology
-
-**Devi Sri Bandaru** and **Deepshikha Bhati**  
-*Department of Computer Science, Kent State University, Kent, OH, USA*
+# Heatmaps That Redraw the Prediction
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg)](https://pytorch.org/)
@@ -9,8 +6,6 @@
 [![Interactive Explorer](https://img.shields.io/badge/interactive-explorer.html-orange.svg)](results/pannuke_resnet50/xai_audit/explorer.html)
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Live%20Demo-yellow.svg)](https://huggingface.co/spaces/Devisri515/medseg-rai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
 
 This repository contains the complete implementation, trained model checkpoints, per-image audit data, reproduction scripts, and interactive visual analytics explorer for the paper:
 
@@ -24,7 +19,7 @@ The repository also includes **MedSeg-RAI**, the full multi-class histopathology
 
 ![Attribution maps for three PanNuke images](assets/heatmap_audit_examples.jpg)
 
-*Figure 1 from the paper: Attribution maps from Model A (U-Net++ / ResNet-50) for a bright-stain tile (top), a dark-stain tile (middle), and a segmentation failure case (bottom, Dice < 0.5). For each map: **Δ** denotes deletion gain over random pixels inside the explained nucleus region (positive = informative; negative = worse than random chance), and **r** denotes Spearman rank correlation with the model's raw class-score control map (1.00 = identical copy). Cyan contours outline the explained nucleus region. Maps are clipped at their 99th percentile for display. Decoder Seg-Grad-CAM acts as a near-perfect copy of the prediction score ($r = 1.00$), including on the failure case where it highlights misclassified nuclei with high confidence and gives no sign that the segmentation is incorrect.*
+*Figure 1: Attribution maps from Model A (U-Net++ / ResNet-50) for a bright-stain tile (top), a dark-stain tile (middle), and a segmentation failure case (bottom, Dice < 0.5). For each map: **Δ** denotes deletion gain over random pixels inside the explained nucleus region (positive = informative; negative = worse than random chance), and **r** denotes Spearman rank correlation with the model's raw class-score control map (1.00 = identical copy). Cyan contours outline the explained nucleus region. Maps are clipped at their 99th percentile for display. Decoder Seg-Grad-CAM acts as a near-perfect copy of the prediction score ($r = 1.00$), including on the failure case where it highlights misclassified nuclei with high confidence and gives no sign that the segmentation is incorrect.*
 
 ---
 
