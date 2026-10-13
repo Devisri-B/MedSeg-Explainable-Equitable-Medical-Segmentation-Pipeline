@@ -20,6 +20,6 @@ The model is a U-Net++ with a ResNet-50 encoder. On the PanNuke held-out test sp
 reaches a mean foreground Dice of 0.644 and pixel accuracy of 0.919. Weights are
 downloaded at startup from the model repo `__MODEL_REPO__`.
 
-Not a medical device. Research and portfolio use only.
+Not a medical device. Research code and demonstration only.
 
-Source code and full write-up: https://github.com/Devisri-B/EquiSeg-Explainable-Equitable-Medical-Segmentation-Pipeline
+Source code and paper replication: https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline

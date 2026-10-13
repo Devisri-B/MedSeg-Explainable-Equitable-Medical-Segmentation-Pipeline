@@ -5,12 +5,28 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "medseg"
 version = "0.1.0"
-description = "Responsible semantic segmentation of histopathology images: multi-class tissue/nuclei segmentation with explainability, fairness auditing, and performance monitoring."
+description = "Official implementation of 'Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology'."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Your Name" }]
-keywords = ["medical-imaging", "semantic-segmentation", "histopathology", "responsible-ai", "fairness", "explainability"]
+authors = [
+  { name = "Devi Sri Bandaru" },
+  { name = "Deepshikha Bhati" },
+]
+keywords = [
+  "medical-imaging",
+  "semantic-segmentation",
+  "histopathology",
+  "explainable-ai",
+  "xai-audit",
+  "attribution-maps",
+  "grad-cam",
+  "responsible-ai",
+]
+
+[project.urls]
+Homepage = "https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline"
+Repository = "https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline"
 
 dependencies = [
   "torch>=2.4",

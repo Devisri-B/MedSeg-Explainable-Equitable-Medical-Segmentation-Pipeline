@@ -56,7 +56,7 @@ provenance is itself a responsible-AI practice that supports transparency and pr
 - PanNuke patches are de-identified tissue images with no direct patient identifiers, which is
   consistent with HIPAA Safe-Harbor expectations for research imagery (see
   [REGULATORY.md](REGULATORY.md)). Using a public, consented research dataset avoids handling
-  protected health information in a portfolio context.
+  protected health information in this research setting.
 
 ## Citation
 - Gamper J., Alemi Koohbanani N., et al. PanNuke: an open pan-cancer histology dataset for nuclei

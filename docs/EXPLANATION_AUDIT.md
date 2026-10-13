@@ -1,5 +1,9 @@
 # Explanation audit: can the model's explanations be trusted, and for whom?
 
+This document provides the technical protocols, audit metrics, and extended results for the paper:
+> **Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology**  
+> Devi Sri Bandaru and Deepshikha Bhati (Department of Computer Science, Kent State University, 2026)
+
 The fairness audit (`medseg/fairness/`) asks whether the model segments every subgroup
 equally well. This audit asks the follow-up question: **when the model explains itself, is
 the explanation equally trustworthy for every subgroup, and can it warn us when the

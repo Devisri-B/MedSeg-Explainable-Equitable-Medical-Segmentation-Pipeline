@@ -1,6 +1,7 @@
 """Tests for the explanation-audit code. They use the small built-in MiniUNet, so they run
 anywhere in a few seconds and need no data or trained weights."""
 import numpy as np
+import pytest
 import torch
 
 from medseg.explain import xai_metrics as xm
@@ -94,7 +95,7 @@ def test_region_random_order_visits_region_first():
 
 
 def test_binary_foreground_wrapper_shapes_and_values():
-    import segmentation_models_pytorch as smp
+    smp = pytest.importorskip("segmentation_models_pytorch")
 
     from medseg.explain.binary_fg import BinaryForeground
 
@@ -113,6 +114,7 @@ def test_binary_foreground_wrapper_shapes_and_values():
 
 
 def test_lrp_returns_unit_range_map_and_none_for_empty_region():
+    pytest.importorskip("zennit")
     from medseg.explain.lrp import LRPAttribution
 
     model, x = _model_and_image()
@@ -127,6 +129,7 @@ def test_lrp_returns_unit_range_map_and_none_for_empty_region():
 
 
 def test_lrp_does_not_modify_the_original_model():
+    pytest.importorskip("zennit")
     from medseg.explain.lrp import LRPAttribution
 
     model, x = _model_and_image()
@@ -143,7 +146,8 @@ def test_lrp_does_not_modify_the_original_model():
 def test_lrp_and_cams_work_through_binary_foreground_wrapper():
     # Regression test: the wrapper used to register encoder/decoder twice, and LRP then
     # failed with "backward through the graph a second time".
-    import segmentation_models_pytorch as smp
+    smp = pytest.importorskip("segmentation_models_pytorch")
+    pytest.importorskip("zennit")
 
     from medseg.explain.binary_fg import BinaryForeground
     from medseg.explain.attribution import default_layers

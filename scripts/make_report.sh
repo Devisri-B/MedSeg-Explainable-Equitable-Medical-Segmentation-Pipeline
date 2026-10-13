@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate every resume-ready figure + metrics file for a trained MedSeg-RAI run,
+# Generate evaluation, fairness, quantification, and qualitative figures for a trained run,
 # then list what was produced.
 #
 # Usage:

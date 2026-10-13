@@ -1,9 +1,6 @@
 # Regulatory and Compliance Notes (healthcare and regulated industry)
 
-Context for adapting this work toward a regulated setting. This is educational, not legal or
-regulatory advice, and the project itself is not a medical device. The point is to show fluency
-with the frameworks an employer in diagnostics or medical devices (for example Abbott) operates
-under.
+Context for translating this research toward regulated clinical environments (e.g., in computational pathology and clinical decision support). This discussion is educational, not legal or regulatory advice, and the repository code itself is for research purposes.
 
 ## 1. FDA, Software as a Medical Device (SaMD)
 A model that drives a diagnostic or treatment decision is typically SaMD and regulated by the
@@ -38,8 +35,8 @@ degradation alerts) is the technical backbone of such a plan: defined thresholds
 defined response, whether that is recalibrate, retrain, or roll back.
 
 ## 2. HIPAA (US privacy)
-- Protected health information must be protected. For research or portfolio work, prefer
-  de-identified data. The Safe-Harbor method removes 18 identifier types. Histopathology pixels
+- Protected health information must be protected. In academic research, prefer
+  de-identified public cohorts. The Safe-Harbor method removes 18 identifier types. Histopathology pixels
   generally carry none, but file metadata can, so strip it.
 - PanNuke is already de-identified public research data, so no protected health information is
   processed here.
@@ -58,6 +55,6 @@ defined response, whether that is recalibrate, retrain, or roll back.
 
 ## 4. Quality and traceability
 - IEC 62304 (medical device software lifecycle) and ISO 14971 (risk management) would govern a
-  real build, and ISO 13485 covers the quality management system.
-- This repo's reproducible configs, versioned checkpoints, tests, and documentation are the kinds
-  of artifacts those standards expect, scaled to a portfolio.
+  clinical deployment, and ISO 13485 covers the quality management system.
+- This repository's reproducible configs, versioned checkpoints, rigorous tests, and documentation reflect the kinds
+  of rigorous artifacts those quality standards expect.

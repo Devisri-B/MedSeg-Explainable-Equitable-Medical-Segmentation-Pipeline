@@ -23,6 +23,6 @@ The checkpoint is a torch dict containing the state_dict, the run config, and th
 names. Load it with the project's `medseg.evaluate.load_run`.
 
 The model was trained on PanNuke (CC BY-NC-SA 4.0), so these weights inherit the same
-non-commercial, share-alike terms. Not a medical device; research and portfolio use only.
+non-commercial, share-alike terms. Not a medical device; research use only.
 
-Live demo and source: see the Hugging Face Space and the GitHub repository.
+Live demo and source: see the Hugging Face Space and the GitHub repository: https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline

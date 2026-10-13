@@ -66,7 +66,7 @@ Are individuals' data protected by design?
 
 What the project does:
 - It uses a public, de-identified, consented research dataset (PanNuke) with no direct patient
-  identifiers, so no protected health information is handled in the portfolio context.
+  identifiers, so no protected health information is handled in this research context.
 - Guidance on HIPAA Safe-Harbor de-identification and EU GDPR is in [REGULATORY.md](REGULATORY.md)
   for anyone adapting this to real data.
 

@@ -1,11 +1,11 @@
 # Model Card: MedSeg-RAI Histopathology Segmenter
 
 This card follows the Model Cards for Model Reporting framework (Mitchell et al., 2019).
-It documents a research and portfolio model. It is not an FDA-cleared medical device and
+It documents a research model developed for academic study. It is not an FDA-cleared medical device and
 must not be used for diagnosis or treatment.
 
 ## Model details
-- Developer: Devi Sri Bandaru
+- Developers: Devi Sri Bandaru and Deepshikha Bhati (Department of Computer Science, Kent State University)
 - Version: v0.2, trained June 2026.
 - Architecture: U-Net++ with an ImageNet-pretrained ResNet-50 encoder, built with
   segmentation-models-pytorch. The framework also supports U-Net, DeepLabV3+, FPN, and
