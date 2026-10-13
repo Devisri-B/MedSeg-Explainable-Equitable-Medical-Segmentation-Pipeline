@@ -1,224 +1,208 @@
-# MedSeg-RAI: Responsible Semantic Segmentation for Histopathology
+# Heatmaps That Redraw the Prediction
 
-Multi-class semantic segmentation of nuclei in H&E histopathology, paired with the
-explainability, fairness, and monitoring layer that healthcare AI needs in practice.
-The model segments five nucleus types plus background across 19 tissue types,
-separates healthy tissue from degraded states (necrotic and neoplastic cells), and
-comes with Grad-CAM explanations, per-pixel uncertainty, a per-subgroup fairness
-audit, data-drift monitoring, and governance documents mapped to the IEEE ethical-AI
-pillars and FDA Good Machine Learning Practice.
+**A control-based audit of attribution maps for nucleus segmentation in H&E histopathology**
 
+This repository contains the code, per-image results and trained checkpoints for the paper
+*Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus
+Segmentation in Histopathology* (D. S. Bandaru, 2026). It also contains the segmentation pipeline
+the audit is built on (MedSeg-RAI): a multi-class nucleus segmentation model with uncertainty,
+fairness, monitoring and governance tooling.
 
-## Results in one line
+![Attribution maps for three PanNuke images](assets/heatmap_audit_examples.jpg)
 
-On the PanNuke held-out test split (fold 3, 2722 images, with test-time augmentation),
-the best model reaches a mean foreground Dice of 0.644 and pixel accuracy of 0.919.
-Per-class Dice is 0.79 (Neoplastic), 0.76 (Epithelial), 0.67 (Inflammatory), 0.63
-(Connective), and 0.36 (Dead). The full breakdown, training curve, confusion matrix,
-fairness audit, and quantification readouts are in [docs/RESULTS.md](docs/RESULTS.md).
+*Attribution maps from the main model (U-Net++ / ResNet-50) for a bright-stain, a dark-stain and a
+failure case. Under each map: Δ, deletion gain over random pixels in the explained region (above 0 =
+informative), and r, rank correlation with the model's own score map (1 = a copy).*
 
-![qualitative panel](assets/qualitative.png)
+## Summary
 
-Input, ground truth, and prediction on test images.
+Attribution heatmaps are often shown beside medical segmentations as evidence that a model can be
+trusted. We test that assumption by scoring six attribution maps against a gradient-free control,
+the network's own class-score map. A map that is no better than this control is a copy of the
+prediction, however convincing it looks.
 
-## Live demo
-
-The trained model runs as a Hugging Face Space. Upload an H&E patch or pick one of the
-examples, choose a Grad-CAM class, and it returns the segmentation overlay, a Seg-Grad-CAM
-explanation, a per-pixel uncertainty map, and the per-class quantification table.
-
-![Live demo on Hugging Face Spaces](assets/Huggingface_interface.png)
-
-Try it: https://huggingface.co/spaces/Devisri515/medseg-rai
-
-## What changed from the baseline
-
-| stage | setup | mean fg Dice | Dead Dice |
-|---|---|---|---|
-| baseline | U-Net, ResNet-34, CE + Dice | 0.554 | 0.152 |
-| final | U-Net++, ResNet-50, Focal-Tversky + stain aug + TTA | 0.644 | 0.364 |
-
-The rare Dead (necrotic) class was holding the average down. A Focal-Tversky loss with
-gentler, clipped class weights more than doubled its Dice, and a larger encoder lifted
-the rest. The fairness audit then flagged genuine gaps across tissue types and stain
-brightness, which is what an honest audit is meant to do.
-
-## Main Features
-
-| Feature | Where it lives in this repo |
+| | |
 |---|---|
-| Automated semantic segmentation that quantifies and classifies several complex classes at the microscopic level | [`medseg/train.py`](medseg/train.py), [`medseg/models/`](medseg/models), [`medseg/quantify.py`](medseg/quantify.py) |
-| Evaluate healthy versus degraded biological states for therapeutic efficacy | [`medseg/quantify.py`](medseg/quantify.py), the tissue-degradation index |
-| IEEE ethical-AI criteria (Accountability, Transparency, Algorithmic Bias, Privacy) | [`docs/ETHICS_IEEE.md`](docs/ETHICS_IEEE.md) |
-| AI fairness analysis and algorithmic bias | [`medseg/fairness/`](medseg/fairness), per-tissue and per-brightness audit |
-| Decision explainability | [`medseg/explain/`](medseg/explain), Seg-Grad-CAM and uncertainty maps |
-| Rigorous model performance monitoring | [`medseg/monitoring/`](medseg/monitoring), drift detection and alerts |
-| Healthcare and regulated-industry awareness | [`docs/REGULATORY.md`](docs/REGULATORY.md), [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md), [`docs/DATASHEET.md`](docs/DATASHEET.md) |
+| Attribution maps | Seg-Grad-CAM and a HiResCAM-style map (decoder and deepest encoder stage), Gradient × Input, layer-wise relevance propagation (LRP) |
+| Control | ReLU of the model's own class-score map (no gradients) |
+| Measurements | localization, deletion faithfulness against a region-restricted random baseline, stability under stain shift, agreement with the control, parameter randomization, depth sweep, label-free failure detection |
+| Studies | three PanNuke models with different decoders, encoders and held-out folds, and model A on 200 MoNuSeg tiles: 3,180 image audits |
 
-## What it does
+### Key findings
 
-- Segmentation: U-Net or U-Net++ with an ImageNet-pretrained encoder via
-  segmentation-models-pytorch, plus a dependency-free fallback, producing a 6-class
-  pixel map.
-- Quantification: connected-component counts, per-class area fractions, and a
-  tissue-degradation index (degraded area over total cellular area) as a proxy readout
-  for treatment response.
-- Explainability: Seg-Grad-CAM to show which input regions drove a class, and
-  uncertainty maps (softmax entropy and MC-dropout) to show where the model is unsure.
-- Fairness: Dice and IoU per tissue type and per stain-brightness bin, with worst-group
-  performance, the best-minus-worst gap, and the worst-over-best ratio.
-- Monitoring: population-stability and KL drift detection on incoming image statistics,
-  plus a performance monitor that logs metrics over time and raises alerts on threshold
-  breaches.
-- Governance: Model Card, Datasheet, IEEE ethics assessment, and FDA and HIPAA notes.
+1. **Decoder-level maps redraw the prediction.** Seg-Grad-CAM at the decoder correlates 0.95 to 0.99
+   with the score map in every study, and its deletion faithfulness is within 0.013 of the control's.
+2. **Looking deeper does not help.** Encoder-level maps and LRP rank pixels worse than random pixels
+   inside the region in all four studies (deletion gain −0.06 to −0.38), for all three LRP rules
+   tested. No encoder depth gives a map that is both informative and not a copy.
+3. **Stability hides a stain effect.** Maps are more stable in dark-stained images (pooled probability
+   0.73 over 179 dark images) with no consistent difference in Dice; the gap survives adjustment for
+   copying in three of four studies.
+4. **Failure detection is model-dependent.** Adding explanation signals to predictive uncertainty
+   changes AUROC by −0.010 on the strongest model and by +0.034 and +0.014 on two weaker ones.
 
-## Repository layout
+Deletion gain over region-random pixels, mean (95% bootstrap interval):
 
-```
-medseg/
-  config.py              Typed config with YAML and CLI merge
-  data/
-    pannuke.py           Load PanNuke from Hugging Face and convert masks to semantic labels
-    dataset.py           Torch dataset, augmentation (incl. HED stain jitter), splits
-  models/unet.py         U-Net and U-Net++ builder, fallback model, device selection
-  losses.py              Dice, Tversky, and Focal-Tversky losses plus class weighting
-  metrics.py             Confusion-matrix per-class Dice and IoU, robust mean
-  train.py               Training loop (AdamW, cosine, early stop, checkpointing)
-  evaluate.py            Test-set evaluation, TTA, confusion matrix
-  quantify.py            Counts, areas, tissue-degradation index
-  explain/               Seg-Grad-CAM and uncertainty
-  fairness/              Per-tissue and per-brightness bias audit
-  monitoring/            Drift detection and performance monitor
-  app/gradio_app.py      Interactive demo
-configs/
-  default.yaml           Baseline run
-  improved.yaml          Best run (U-Net++, ResNet-50, Focal-Tversky, stain aug)
-scripts/
-  download_data.py       Fetch PanNuke
-  make_report.sh         Generate every figure for a trained run
-docs/                    RESULTS, MODEL_CARD, DATASHEET, ETHICS_IEEE, REGULATORY
-tests/                   Smoke test that runs without downloading data
-```
+| Map | A: U-Net++ / R50, fold 3 (n = 659) | B: FPN / R18, fold 1 (n = 1,333) | C: MoNuSeg (n = 200) | D: U-Net / R18, fold 2 (n = 988) |
+|---|---|---|---|---|
+| Score map (control) | 0.023 (0.012, 0.035) | −0.045 (−0.053, −0.036) | −0.015 (−0.038, 0.008) | −0.009 (−0.017, −0.001) |
+| Seg-Grad-CAM, decoder | 0.021 (0.010, 0.033) | −0.043 (−0.051, −0.034) | −0.025 (−0.049, −0.002) | −0.022 (−0.030, −0.015) |
+| HiResCAM-style, decoder | 0.018 (0.008, 0.029) | −0.035 (−0.043, −0.028) | −0.015 (−0.038, 0.007) | 0.010 (0.004, 0.017) |
+| Seg-Grad-CAM, encoder | −0.366 (−0.384, −0.349) | −0.115 (−0.127, −0.103) | −0.296 (−0.329, −0.263) | −0.147 (−0.162, −0.133) |
+| HiResCAM-style, encoder | −0.355 (−0.372, −0.337) | −0.077 (−0.088, −0.066) | −0.304 (−0.337, −0.272) | −0.055 (−0.069, −0.041) |
+| Gradient × Input | −0.109 (−0.123, −0.095) | 0.016 (0.005, 0.026) | −0.154 (−0.175, −0.131) | 0.025 (0.015, 0.034) |
+| LRP (ε, z⁺, flat) | −0.309 (−0.330, −0.288) | −0.221 (−0.234, −0.207) | −0.375 (−0.411, −0.340) | −0.172 (−0.186, −0.158) |
 
-## Quickstart
+Full method, tables and limitations: [docs/EXPLANATION_AUDIT.md](docs/EXPLANATION_AUDIT.md).
 
-### 1. Environment 
+<img src="assets/depth_sweep.png" width="440" alt="Depth sweep">
 
-```
+*Depth sweep (model A, 100 images): every encoder stage is worse than random; only the decoder is
+above zero, and there the map is a near-copy of the prediction.*
+
+## Installation
+
+```bash
+git clone https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline
+cd MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline
+git lfs install && git lfs pull        # downloads the trained checkpoints
 python -m venv .venv && source .venv/bin/activate
-pip install -U pip
-pip install -e ".[full]"        # or: pip install -r requirements.txt
+pip install -e ".[full]"
+pytest -q tests
 ```
 
-### 2. Smoke test
+Python 3.10 or newer. Everything runs on CPU; a GPU only speeds up training.
 
+## Data
+
+| Dataset | Use | How to get it |
+|---|---|---|
+| [PanNuke](https://arxiv.org/abs/2003.10778) | training and studies A, B, D (folds 1 to 3, 19 tissues, 5 nucleus types) | `python scripts/download_data.py --root data/pannuke` (from the Hugging Face Hub) |
+| [MoNuSeg](https://monuseg.grand-challenge.org/) | study C (external labs; foreground only) | prepared automatically on the first `--dataset monuseg` run |
+
+Both datasets are released for non-commercial research; please cite the original authors.
+
+## Trained checkpoints
+
+| File (in `checkpoints/`, Git LFS) | Study | Architecture | Trained on → tested on |
+|---|---|---|---|
+| `study_A_unetpp_resnet50_fold3.pth` | A, C | U-Net++ / ResNet-50 | PanNuke folds 1+2 → fold 3 (C: MoNuSeg) |
+| `study_B_fpn_resnet18_fold1.pth` | B | FPN / ResNet-18 | folds 2+3 → fold 1 |
+| `study_D_unet_resnet18_fold2.pth` | D | U-Net / ResNet-18 | folds 1+3 → fold 2 |
+
+Each checkpoint stores its own training configuration. To use one, copy it to
+`outputs/<run>/best_model.pth`; `medseg.evaluate.load_run("outputs/<run>")` then restores the
+model. Checksums are in `checkpoints/SHA256SUMS.txt`. Models B and D were trained for 3 and 4 epochs
+and serve as audit subjects rather than tuned segmenters.
+
+## Reproducing the audit
+
+```bash
+# place the checkpoints where the scripts expect them
+mkdir -p outputs/pannuke_resnet50 outputs/pannuke_fpn_r18_fold1 outputs/pannuke_unet_r18_fold2
+cp checkpoints/study_A_unetpp_resnet50_fold3.pth outputs/pannuke_resnet50/best_model.pth
+cp checkpoints/study_B_fpn_resnet18_fold1.pth   outputs/pannuke_fpn_r18_fold1/best_model.pth
+cp checkpoints/study_D_unet_resnet18_fold2.pth  outputs/pannuke_unet_r18_fold2/best_model.pth
+
+# studies A to D
+python -m medseg.explain.xai_audit --run outputs/pannuke_resnet50     --fold 3 --per-tissue 34  --lrp
+python -m medseg.explain.xai_audit --run outputs/pannuke_fpn_r18_fold1 --fold 1 --per-tissue 100 --lrp
+python -m medseg.explain.xai_audit --run outputs/pannuke_resnet50 --dataset monuseg --per-tissue 25 --lrp --out-name rows_monuseg.csv
+python -m medseg.explain.xai_audit --run outputs/pannuke_unet_r18_fold2 --fold 2 --per-tissue 60  --lrp
+
+# additional checks (model A)
+python -m medseg.explain.xai_sanity       --run outputs/pannuke_resnet50 --n 40
+python -m medseg.explain.xai_depth_sweep  --run outputs/pannuke_resnet50 --n 100
+python -m medseg.explain.xai_lrp_ablation --run outputs/pannuke_resnet50 --n 60
+
+# tables, figures and the interactive explorer
+python -m medseg.explain.xai_analysis    --run outputs/pannuke_resnet50
+python -m medseg.explain.xai_replication --out outputs/replication --studies A,B,C,D
+python -m medseg.viz.explorer            --run outputs/pannuke_resnet50
+python -m medseg.viz.paper_figures heatmaps --indices 2199,841,2165 --out paper/fig_heatmaps.png
 ```
-pytest -q
-```
 
-The logic tests (mask conversion, metrics, quantification, fairness, drift, model forward,
-Grad-CAM) run anywhere. A one-epoch end-to-end training test runs on a small real-data slice
-when data/pannuke is present, and skips otherwise.
+Each audit resumes from its own results file if interrupted. Rare dark-stain images can be added
+with `--only-dark --exclude-csv rows.csv --out-name rows_dark.csv`. To retrain models B and D, use
+`configs/audit_fpn_r18_fold1.yaml` and `configs/audit_unet_r18_fold2.yaml` with `python -m medseg.train`.
 
-### 3. Get the data (PanNuke)
+## Results included in this repository
 
-```
-python scripts/download_data.py --root data/pannuke
-```
+[`results/`](results/README.md) holds every measured number, so the analysis can be checked without
+re-running any model: one row per audited image for each study, the analysis tables, the replication
+summary (`results/replication/replication.json`), training curves for models B and D, and
+`results/pannuke_resnet50/xai_audit/explorer.html`, a self-contained interactive explorer that links
+per-tissue and per-stain scorecards to the maps of every image (open it in any browser).
 
-PanNuke is a free academic dataset of roughly 7,900 patches at 256 by 256, with 5
-nucleus classes across 19 tissue types in 3 folds. See [docs/DATASHEET.md](docs/DATASHEET.md).
+## The segmentation pipeline (MedSeg-RAI)
 
-### 4. Train
+The audited model comes from a full segmentation pipeline for five nucleus types plus background
+across 19 tissue types.
 
-```
-# baseline
-python -m medseg.train --config configs/default.yaml
+| Component | Location |
+|---|---|
+| U-Net / U-Net++ / FPN training with Focal-Tversky loss, HED stain augmentation and TTA | [`medseg/train.py`](medseg/train.py), [`medseg/models/`](medseg/models), [`configs/`](configs) |
+| Evaluation, per-class Dice and IoU, confusion matrix | [`medseg/evaluate.py`](medseg/evaluate.py), [`medseg/metrics.py`](medseg/metrics.py) |
+| Nucleus counts, area fractions and a tissue-degradation index | [`medseg/quantify.py`](medseg/quantify.py) |
+| Attribution maps, LRP, uncertainty and the explanation audit | [`medseg/explain/`](medseg/explain) |
+| Per-tissue and per-stain fairness audit | [`medseg/fairness/`](medseg/fairness) |
+| Data-drift and performance monitoring | [`medseg/monitoring/`](medseg/monitoring) |
+| Interactive demo and Hugging Face deployment | [`medseg/app/`](medseg/app), [`deploy/`](deploy) |
+| Model card, datasheet, ethics and regulatory notes | [`docs/`](docs) |
 
-# best configuration (U-Net++, ResNet-50, Focal-Tversky, stain aug)
-python -m medseg.train --config configs/improved.yaml --run-name pannuke_resnet50
-```
+On the PanNuke fold-3 test split (2,722 images, with test-time augmentation) the main model reaches a
+mean foreground Dice of 0.644 and pixel accuracy of 0.919; see [docs/RESULTS.md](docs/RESULTS.md).
+A live demo runs at [huggingface.co/spaces/Devisri515/medseg-rai](https://huggingface.co/spaces/Devisri515/medseg-rai).
 
-### 5. Evaluate and make every figure
-
-```
+```bash
+python -m medseg.train    --config configs/improved.yaml --run-name pannuke_resnet50
 python -m medseg.evaluate --run outputs/pannuke_resnet50 --tta
 bash scripts/make_report.sh outputs/pannuke_resnet50
 ```
 
-`make_report.sh` writes the confusion matrix, per-tissue fairness, brightness fairness,
-quantification charts, Grad-CAM overlays, the qualitative panel, and the training curve
-into the run folder.
-
-### 6. Explore, audit, monitor, demo
+## Repository structure
 
 ```
-python -m medseg.fairness.audit     --run outputs/pannuke_resnet50
-python -m medseg.quantify           --run outputs/pannuke_resnet50
-python -m medseg.monitoring.monitor --run outputs/pannuke_resnet50
-python -m medseg.app.gradio_app     --run outputs/pannuke_resnet50
+medseg/
+  data/          PanNuke and MoNuSeg loaders, augmentation
+  models/        U-Net, U-Net++, FPN builders
+  explain/       attribution maps, LRP, audit metrics, audit runner, analysis, replication
+  viz/           interactive explorer and paper figures
+  fairness/      subgroup audit
+  monitoring/    drift detection
+  app/           Gradio demo
+configs/         training configurations
+checkpoints/     trained models for studies A, B, D (Git LFS)
+results/         per-image audit results, tables, figures, explorer
+docs/            explanation-audit method, results, model card, datasheet, governance
+deploy/          Hugging Face Space
+scripts/         data download and report generation
+tests/           unit and smoke tests
 ```
 
-### 7. Explanation audit (new)
+## Limitations
 
-Are the heatmaps trustworthy, and equally so for every tissue and stain group? This audit measures
-six attribution methods (Seg-Grad-CAM, HiResCAM-style, Gradient x Input, LRP) at several depths
-against a gradient-free control, on three models and two datasets. See
-[docs/EXPLANATION_AUDIT.md](docs/EXPLANATION_AUDIT.md) for the method, all numbers and the limits.
+The audit covers H&E nuclei on two datasets and three models; models B and D are short-trained.
+LRP relevance is not conserved in this setup (input relevance is −14% to +16% of the explained
+score). Deletion fills pixels with the ImageNet mean colour, and stain brightness is a proxy for
+scanner and laboratory. Attribution measures model sensitivity, not tissue causation. This is
+research code on public data, not a medical device.
 
+## Citation
+
+```bibtex
+@misc{bandaru2026heatmaps,
+  author = {Bandaru, Devi Sri},
+  title  = {Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps
+            for Nucleus Segmentation in Histopathology},
+  year   = {2026},
+  note   = {Code: https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline}
+}
 ```
-python -m medseg.explain.xai_audit       --run outputs/pannuke_resnet50 --per-tissue 34 --lrp
-python -m medseg.explain.xai_sanity      --run outputs/pannuke_resnet50 --n 40
-python -m medseg.explain.xai_depth_sweep --run outputs/pannuke_resnet50 --n 100
-python -m medseg.explain.xai_analysis    --run outputs/pannuke_resnet50
-python -m medseg.explain.xai_replication --out outputs/replication --studies A,B,C,D
-python -m medseg.viz.explorer            --run outputs/pannuke_resnet50
-```
 
-Measured on 3,180 image audits: PanNuke fold 3 with U-Net++/ResNet-50 (659), fold 1 with FPN/ResNet-18
-(1,333), fold 2 with U-Net/ResNet-18 (988), and 200 MoNuSeg tiles:
+Please also cite PanNuke (Gamper et al., 2019, 2020), MoNuSeg (Kumar et al., 2017) and Zennit
+(Anders et al., 2021) when using this work.
 
-- Decoder-level maps re-draw the prediction: Seg-Grad-CAM correlates 0.95 to 0.99 with the model's
-  own score map and its deletion gain is within 0.013 of the control's in every study.
-- Encoder-level maps and LRP are worse than hiding random pixels inside the region in all four studies.
-- Stain-shift stability is higher in dark images in all four studies (pooled probability 0.73) with
-  no Dice difference; most of the gap survives adjustment for map copying in three of four studies.
-- Whether explanation signals add to uncertainty for failure detection depends on the model:
-  no gain on the strongest model (change -0.010), +0.034 and +0.014 on two weaker ones.
-- Limits: LRP relevance is not conserved here, two of the three models are short-trained, dark groups
-  hold 33 to 63 images per PanNuke study.
+## License
 
-Tables and figures are written to `<run>/xai_audit/analysis/` and `outputs/replication/`; the
-interactive page is `<run>/xai_audit/explorer.html`.
-
-## How this transfers to other healthcare roles
-
-The organ is incidental. The competencies are general. The same pipeline maps onto:
-
-| Target domain | What you swap in | What stays the same |
-|---|---|---|
-| Radiology (CT, MRI, X-ray) | 3D U-Net and a DICOM loader | losses, metrics, fairness, monitoring, governance |
-| Ophthalmology (fundus, OCT) | vessel or lesion masks | the whole responsible-AI layer |
-| Dermatology | clinical photographs | explainability and bias audit |
-| Cell biology and drug discovery | live-cell microscopy | quantification and degradation index |
-
-Only the data layer (`medseg/data/`) is dataset-specific. Everything else is
-modality-agnostic.
-
-## Responsible AI and governance
-
-- Accountability: versioned configs, fixed seeds, full run artifacts, and a Model Card.
-- Transparency: Grad-CAM and uncertainty make each prediction inspectable, and the
-  Datasheet documents data provenance and known biases.
-- Algorithmic bias: the fairness audit measures disparities across tissue and stain
-  subgroups before deployment, and reports the worst group rather than the average.
-- Privacy: guidance on de-identification (HIPAA Safe Harbor) and the use of public,
-  consented research data.
-
-See [docs/ETHICS_IEEE.md](docs/ETHICS_IEEE.md) and [docs/REGULATORY.md](docs/REGULATORY.md).
-
-
-## License and citation
-
-Code is MIT licensed. PanNuke is released for non-commercial research; cite Gamper et al.
-(2019 and 2020). Full references are in [docs/DATASHEET.md](docs/DATASHEET.md).
+Code is released under the [MIT License](LICENSE). The datasets keep their own licences.
