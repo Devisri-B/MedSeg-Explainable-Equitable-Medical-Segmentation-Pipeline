@@ -2,6 +2,7 @@
 # repo root so we ignore ONLY the top-level data/ and outputs/ — never medseg/data/.
 /data/
 /outputs/
+/logs/
 *.pth
 *.ckpt
 *.npy
