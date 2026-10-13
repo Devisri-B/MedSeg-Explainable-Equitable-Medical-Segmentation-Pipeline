@@ -21,7 +21,7 @@ trusted. We test that assumption by scoring six attribution maps against a gradi
 the network's own class-score map. A map that is no better than this control is a copy of the
 prediction, however convincing it looks.
 
-| | |
+| Component | Details |
 |---|---|
 | Attribution maps | Seg-Grad-CAM and a HiResCAM-style map (decoder and deepest encoder stage), Gradient × Input, layer-wise relevance propagation (LRP) |
 | Control | ReLU of the model's own class-score map (no gradients) |
