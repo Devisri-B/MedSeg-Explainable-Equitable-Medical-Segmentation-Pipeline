@@ -16,7 +16,7 @@ __version__ = "0.1.0"
 #   - "Dead"       -> degraded / necrotic / apoptotic cells (a "degraded" state)
 #   - "Neoplastic" -> tumour / diseased cells
 # These two classes are what let us reason about "healthy vs. degraded biological
-# states" and compute a tissue-degradation index (see medseg/quantify.py).
+# states".
 CLASS_NAMES = [
     "Background",
     "Neoplastic",

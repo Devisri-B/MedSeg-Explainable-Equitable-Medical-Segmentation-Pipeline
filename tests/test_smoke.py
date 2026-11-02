@@ -13,9 +13,6 @@ import pytest
 from medseg.data import pannuke
 from medseg.fairness.audit import disparity
 from medseg.metrics import SegMetrics
-from medseg.monitoring.drift import DriftDetector, extract_features
-from medseg.monitoring.monitor import corrupt_images
-from medseg.quantify import quantify_mask
 
 DATA_ROOT = "data/pannuke"
 
@@ -43,32 +40,11 @@ def test_metrics_perfect_and_partial():
     assert pytest.approx(m2.compute()["per_class_dice"]["class_1"], abs=1e-5) == 0.8
 
 
-def test_quantify_degradation_index():
-    mask = np.zeros((10, 10), dtype=np.uint8)
-    mask[:, :4] = 5     # Epithelial (healthy) -> 40 px
-    mask[:, 4:6] = 4    # Dead (degraded)      -> 20 px
-    q = quantify_mask(mask)
-    assert q["foreground_px"] == 60
-    assert pytest.approx(q["degradation_index"], abs=1e-6) == 20 / 60
-
-
 def test_disparity_flagging():
     d = disparity({"breast": 0.90, "lung": 0.60})
     assert d["worst_group"] == "lung"
     assert pytest.approx(d["ratio"], abs=1e-6) == 0.6 / 0.9
     assert d["flagged"] is True          # ratio < 0.8
-
-
-def test_drift_detector():
-    rng = np.random.default_rng(1)
-    imgs = rng.integers(0, 256, size=(16, 64, 64, 3), dtype=np.uint8)
-    feats = extract_features(imgs)
-    det = DriftDetector().fit(feats)
-    psi_same = det.psi(feats)["overall_psi"]
-    psi_shift = det.psi(extract_features(corrupt_images(imgs, severity=0.8, seed=2)))
-    assert psi_same < 1e-6
-    assert psi_shift["overall_psi"] > 0.1 and psi_shift["flag"] in (True, False)
-    assert psi_shift["overall_psi"] > psi_same
 
 
 # ----------------------------- torch path -----------------------------
@@ -131,7 +107,7 @@ if __name__ == "__main__":
     failures = 0
     tests = [
         test_pannuke_mask_to_semantic, test_metrics_perfect_and_partial,
-        test_quantify_degradation_index, test_disparity_flagging, test_drift_detector,
+        test_disparity_flagging,
         test_model_forward_and_loss, test_gradcam_and_uncertainty,
     ]
     for t in tests:

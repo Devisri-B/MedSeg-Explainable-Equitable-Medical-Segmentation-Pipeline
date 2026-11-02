@@ -21,7 +21,6 @@ keywords = [
   "xai-audit",
   "attribution-maps",
   "grad-cam",
-  "responsible-ai",
 ]
 
 [project.urls]
@@ -45,9 +44,7 @@ full = [
   "torchvision>=0.19",
   "segmentation-models-pytorch>=0.3.4",
   "albumentations>=1.4",
-  "huggingface_hub>=0.24",
   "datasets>=2.14",
-  "gradio>=4.0",
   "scipy>=1.11",
   "zennit>=0.5",
 ]

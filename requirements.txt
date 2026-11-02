@@ -13,12 +13,8 @@ pillow>=10.0
 # --- Recommended (better models, augmentation, real data) ---
 segmentation-models-pytorch>=0.3.4
 albumentations>=1.4
-huggingface_hub>=0.24
 datasets>=2.14            # auto-download PanNuke from the Hugging Face Hub
 
 # --- Explanation audit ---
 scipy>=1.11
 zennit>=0.5          # layer-wise relevance propagation (LRP)
-
-# --- Demo app ---
-gradio>=4.0

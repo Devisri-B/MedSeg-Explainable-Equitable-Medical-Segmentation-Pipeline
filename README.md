@@ -4,7 +4,6 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg)](https://pytorch.org/)
 [![Git LFS Checkpoints](https://img.shields.io/badge/checkpoints-Git%20LFS-brightgreen.svg)](checkpoints/)
 [![Interactive Explorer](https://img.shields.io/badge/interactive-explorer.html-orange.svg)](results/pannuke_resnet50/xai_audit/explorer.html)
-[![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Live%20Demo-yellow.svg)](https://huggingface.co/spaces/Devisri515/medseg-rai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 This repository contains the complete implementation, trained model checkpoints, per-image audit data, reproduction scripts, and interactive visual analytics explorer for the paper:
@@ -12,8 +11,6 @@ This repository contains the complete implementation, trained model checkpoints,
 > **Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology**  
 > Devi Sri Bandaru and Deepshikha Bhati (Kent State University, 2026)  
 > *Preprint / Code Repository:* [`https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline`](https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline)
-
-The repository also includes **MedSeg-RAI**, the full multi-class histopathology segmentation pipeline on which the audit was developed—featuring U-Net/U-Net++/FPN training, uncertainty quantification, subgroup fairness auditing across 19 tissues, drift monitoring, and clinical governance tooling.
 
 ---
 
@@ -173,7 +170,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[full]"
 
-# 4. Verify test suite (20 automated tests)
+# 4. Verify the test suite
 pytest -q tests
 ```
 
@@ -254,7 +251,7 @@ python -m medseg.explain.xai_analysis --run outputs/pannuke_resnet50
 python -m medseg.explain.xai_replication --out outputs/replication --studies A,B,C,D
 
 # Regenerate Paper Figure 1 (attribution panels across bright, dark, and failure cases)
-python -m medseg.viz.paper_figures heatmaps --indices 2199,841,2165 --out paper/fig_heatmaps.png
+python -m medseg.viz.paper_figures heatmaps --indices 2199,841,2165 --out assets/heatmap_audit_examples.jpg
 ```
 
 ---
@@ -270,53 +267,44 @@ Every single measured data point is saved under [`results/`](results/README.md) 
 
 ---
 
-## The MedSeg-RAI Segmentation Framework
+## Code Overview
 
-The audit is built upon a modular responsible AI histopathology segmentation framework:
+The audit is built on a segmentation pipeline that is included so the studies can be reproduced end to end:
 
 | Module | Implementation | Description |
 |:---|:---|:---|
-| **Segmentation Architectures** | [`medseg/models/`](medseg/models) | U-Net++, FPN, U-Net with ResNet encoders and MiniUNet fallback |
-| **Loss & Training** | [`medseg/losses.py`](medseg/losses.py), [`medseg/train.py`](medseg/train.py) | Combined Focal-Tversky loss, square-root class re-weighting, HED stain augmentation, and test-time augmentation (TTA) |
-| **Evaluation Metrics** | [`medseg/metrics.py`](medseg/metrics.py), [`medseg/evaluate.py`](medseg/evaluate.py) | Per-class Dice and IoU, confusion matrices, robust mean Dice (excluding Dead) |
-| **Subgroup Fairness** | [`medseg/fairness/`](medseg/fairness) | Tissue-level and stain-level disparity audits with four-fifths rule enforcement |
-| **Pathology Quantification** | [`medseg/quantify.py`](medseg/quantify.py) | Per-class cellular counts, area fractions, and tissue degradation index |
-| **Performance & Drift Monitoring**| [`medseg/monitoring/`](medseg/monitoring) | Population Stability Index (PSI) and feature drift detection |
-| **Interactive Demo** | [`medseg/app/`](medseg/app), [`deploy/`](deploy) | Gradio application deployed to [Hugging Face Spaces](https://huggingface.co/spaces/Devisri515/medseg-rai) |
+| **Attribution and audit** | [`medseg/explain/`](medseg/explain) | Seg-Grad-CAM, HiResCAM-style, Gradient × Input, LRP, the score-map control, deletion and stability metrics, analysis, depth sweep, LRP ablation, and cross-study replication |
+| **Segmentation models** | [`medseg/models/`](medseg/models) | U-Net++, FPN, U-Net with ResNet encoders and a MiniUNet fallback |
+| **Training** | [`medseg/losses.py`](medseg/losses.py), [`medseg/train.py`](medseg/train.py) | Combined Focal-Tversky loss, square-root class re-weighting, HED stain augmentation, test-time augmentation |
+| **Evaluation** | [`medseg/metrics.py`](medseg/metrics.py), [`medseg/evaluate.py`](medseg/evaluate.py) | Per-class Dice and IoU, confusion matrices |
+| **Subgroup disparity** | [`medseg/fairness/`](medseg/fairness) | Tissue-level and stain-level disparity used in the subgroup analysis |
+| **Data** | [`medseg/data/`](medseg/data) | PanNuke and MoNuSeg loaders |
+| **Figures and explorer** | [`medseg/viz/`](medseg/viz) | Interactive explorer builder and paper figures |
 
-On the PanNuke held-out test split (fold 3, 2,722 images with TTA), the main model achieves **0.644 mean foreground Dice**, **0.714 robust mean Dice** (Dead class excluded), and **0.919 pixel accuracy**. Detailed benchmark progression is documented in [docs/RESULTS.md](docs/RESULTS.md).
+The earlier standalone project (segmentation pipeline with a Hugging Face demo, drift monitoring, and governance documents) is archived at [`MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline-old`](https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline-old).
 
 ---
 
 ## Repository Structure
 
 ```
-├── assets/                     # Paper figures, qualitative panels, and UI previews
+├── assets/                     # Paper figures
 ├── checkpoints/                # Trained model weights for Studies A, B, D (Git LFS)
 │   ├── SHA256SUMS.txt          # Cryptographic checksums
 │   └── README.md               # Checkpoint descriptions and usage
 ├── configs/                    # Reproducible YAML training configurations
-├── deploy/                     # Hugging Face Space deployment scripts and assets
-├── docs/                       # Technical documentation and governance
-│   ├── EXPLANATION_AUDIT.md    # Detailed audit protocols, equations, and tables
-│   ├── RESULTS.md              # Model performance, fairness, and ablation logs
-│   ├── MODEL_CARD.md           # Model reporting card (Mitchell et al., 2019)
-│   ├── DATASHEET.md            # Dataset provenance card (Gebru et al., 2021)
-│   ├── ETHICS_IEEE.md          # IEEE Ethically Aligned Design assessment
-│   └── REGULATORY.md           # Healthcare SaMD and translational governance notes
+├── docs/
+│   └── EXPLANATION_AUDIT.md    # Detailed audit protocols, equations, and tables
 ├── medseg/                     # Core Python package
-│   ├── app/                    # Gradio web application
 │   ├── data/                   # PanNuke and MoNuSeg loaders and HED augmentation
 │   ├── explain/                # Attribution methods, LRP, audit metrics, analysis
-│   ├── fairness/               # Subgroup disparity and fairness auditing
+│   ├── fairness/               # Subgroup disparity
 │   ├── models/                 # Model builders and wrappers
-│   ├── monitoring/             # Feature drift and PSI monitoring
 │   ├── metrics.py              # Segmentation evaluation metrics
-│   ├── quantify.py             # Biological quantification readouts
 │   └── viz/                    # Interactive explorer builder and paper figures
-├── results/                    # Complete per-image CSV logs, summaries, and explorer.html
-├── scripts/                    # Helper scripts for data download and reporting
-├── tests/                      # Automated unit and integration test suite
+├── results/                    # Per-image CSV logs, summaries, and explorer.html
+├── scripts/                    # Data download helper
+├── tests/                      # Automated unit and integration tests
 ├── pyproject.toml              # Build specifications and dependencies
 ├── requirements.txt            # Pinned environment requirements
 └── LICENSE                     # MIT License
