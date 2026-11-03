@@ -33,3 +33,6 @@ env/
 
 # Trained checkpoints are kept (tracked with Git LFS, see .gitattributes)
 !/checkpoints/*.pth
+
+# Staged Space builds
+/build/
