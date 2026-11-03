@@ -123,7 +123,7 @@ Mean deletion gain $\Delta$ over random pixels inside the explained region (with
 
 ## Interactive Visual Analytics Explorer
 
-To allow researchers, pathologists, and reviewers to inspect the 3,180 audits directly, we include a self-contained visual analytics dashboard:
+To let researchers, pathologists, and reviewers inspect the audit directly, we include a self-contained visual analytics dashboard for Study A (659 PanNuke images; Studies B to D are available as per-image CSVs in `results/`):
 
 [`results/pannuke_resnet50/xai_audit/explorer.html`](results/pannuke_resnet50/xai_audit/explorer.html)
 
