@@ -127,25 +127,14 @@ To let researchers, pathologists, and reviewers inspect the audit directly, we i
 
 **Live explorer: [https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)**
 
-The same file is also in the repository: [`results/pannuke_resnet50/xai_audit/explorer.html`](results/pannuke_resnet50/xai_audit/explorer.html)
-
 - **Per-Tissue & Per-Stain Scorecards:** Real-time filtering across 19 PanNuke tissue types and 3 stain brightness categories.
 - **Interactive Metric Scatter Plots:** Explores the correlation of deletion gain, stability, uncertainty, and control agreement against segmentation Dice.
 - **Side-by-Side Heatmap Viewer:** Click any point to view the H&E patch, ground truth mask, model prediction, class-score control, and all six attribution heatmaps.
-
-### How to Open the Explorer
-
-Use the live link above, or open the file directly in any modern browser (no build step or web server needed):
-
-```bash
-# Option 1: Open directly via your OS file manager
-open results/pannuke_resnet50/xai_audit/explorer.html       # macOS
-xdg-open results/pannuke_resnet50/xai_audit/explorer.html   # Linux
-
-# Option 2: Serve locally
-python -m http.server 8000 --directory results/pannuke_resnet50/xai_audit
-# Visit: http://localhost:8000/explorer.html
-```
+- **Audit Lab (recomputed in your browser from the per-image audit, respecting the filters):**
+  - *Copy detector:* for each attribution method, the distribution of agreement with the model's own score map, with the "copy" zone (r ≥ 0.95) marked.
+  - *Triage simulator:* combine any explanation signals, set a review budget, and see how many segmentation failures you catch compared with uncertainty alone and random order, with AUROC.
+  - *Reliability atlas:* a tissue × signal map of how well each signal tracks Dice, showing where a signal flips sign. Click a cell to open it in the scatter plot.
+  - *Case finder and difference view:* jump to failed cases where the map just re-draws the prediction (or is independent of it), and compare any map with the control pixel by pixel.
 
 ---
 
