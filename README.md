@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg)](https://pytorch.org/)
 [![Git LFS Checkpoints](https://img.shields.io/badge/checkpoints-Git%20LFS-brightgreen.svg)](checkpoints/)
-[![Interactive Explorer](https://img.shields.io/badge/interactive-explorer.html-orange.svg)](results/pannuke_resnet50/xai_audit/explorer.html)
+[![Interactive Explorer](https://img.shields.io/badge/interactive-explorer-orange.svg)](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 This repository contains the complete implementation, trained model checkpoints, per-image audit data, reproduction scripts, and interactive visual analytics explorer for the paper:
@@ -125,7 +125,9 @@ Mean deletion gain $\Delta$ over random pixels inside the explained region (with
 
 To let researchers, pathologists, and reviewers inspect the audit directly, we include a self-contained visual analytics dashboard for Study A (659 PanNuke images; Studies B to D are available as per-image CSVs in `results/`):
 
-[`results/pannuke_resnet50/xai_audit/explorer.html`](results/pannuke_resnet50/xai_audit/explorer.html)
+**Live explorer: [https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)**
+
+The same file is also in the repository: [`results/pannuke_resnet50/xai_audit/explorer.html`](results/pannuke_resnet50/xai_audit/explorer.html)
 
 - **Per-Tissue & Per-Stain Scorecards:** Real-time filtering across 19 PanNuke tissue types and 3 stain brightness categories.
 - **Interactive Metric Scatter Plots:** Explores the correlation of deletion gain, stability, uncertainty, and control agreement against segmentation Dice.
@@ -133,7 +135,7 @@ To let researchers, pathologists, and reviewers inspect the audit directly, we i
 
 ### How to Open the Explorer
 
-No build step or web server is required. Open the file directly in any modern browser:
+Use the live link above, or open the file directly in any modern browser (no build step or web server needed):
 
 ```bash
 # Option 1: Open directly via your OS file manager
