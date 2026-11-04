@@ -261,27 +261,6 @@ The study has these limits:
 
 ---
 
-## Citation
-
-If you use this codebase, checkpoints, or findings in your research, please cite:
-
-```bibtex
-@article{bandaru2026heatmaps,
-  title   = {Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology},
-  author  = {Bandaru, Devi Sri and Bhati, Deepshikha},
-  journal = {arXiv preprint},
-  year    = {2026},
-  url     = {https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline}
-}
-```
-
-Please also cite the foundational benchmark datasets and tools:
-- **PanNuke:** Gamper et al., *PanNuke: An Open Pan-Cancer Histology Dataset for Nuclei Instance Segmentation and Classification*, CMPB 2019 / arXiv 2020.
-- **MoNuSeg:** Kumar et al., *A Dataset and a Technique for Generalized Nuclear Segmentation for Computational Pathology*, IEEE TMI 2017.
-- **Zennit:** Anders et al., *Software for Dataset-wide XAI: From Local Explanations to Global Insights with Zennit, Corelay, and Virelay*, PLoS ONE 2026.
-
----
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE). The underlying PanNuke and MoNuSeg datasets maintain their respective non-commercial academic research licenses.
