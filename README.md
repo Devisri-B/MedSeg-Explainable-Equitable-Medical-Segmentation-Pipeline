@@ -6,12 +6,23 @@
 [![Interactive Explorer](https://img.shields.io/badge/interactive-explorer-orange.svg)](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-This repository contains the complete implementation, trained model checkpoints, per-image audit data, reproduction scripts, and interactive visual analytics explorer for the paper:
+This repository contains the complete implementation, trained model checkpoints, per-image audit data, reproduction scripts, and interactive visual analytics explorer for the following work:
 
 > **Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology**  
 > Devi Sri Bandaru and Deepshikha Bhati (Kent State University, 2026)  
-> *Preprint / Code Repository:* [`https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline`](https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline)
 
+### Interactive Visual Analytics Explorer
+
+**[Open the live explorer →](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)**
+
+A browser-based tool for testing the 's claims on real images. For each of 659 PanNuke tissue images you can see whether the heatmap shows anything beyond what the model already predicted, and whether it gives any warning when the segmentation fails.
+
+- **Explore:** plot segmentation accuracy (Dice) against any explanation measure, filter by tissue and stain brightness, zoom and pan, and click any dot to see its heatmaps next to the ground truth and prediction.
+- **Copy detector:** shows which heatmap methods merely redraw the model's own prediction score. Decoder Grad-CAM does this for 99% of images.
+- **Failure triage:** simulates flagging bad segmentations (Dice < 0.5) from explanation measures, with a ranking-quality score (AUROC) and a chart of how many failures you catch for a given review budget.
+- **Reliability atlas:** a tissue-by-measure grid showing where an explanation measure tracks segmentation quality and where it doesn't.
+
+Studies B to D are available as per-image CSVs in [`results/`](results/README.md)
 ---
 
 ![Attribution maps for three PanNuke images](assets/heatmap_audit_examples.jpg)
@@ -20,18 +31,9 @@ This repository contains the complete implementation, trained model checkpoints,
 
 ---
 
-## Abstract & Research Questions
+## What We Ask
 
-Attribution heatmaps are widely used to interpret deep learning-based medical image segmentation, yet their visual plausibility does not guarantee that they faithfully represent model decisions. In clinical workflows, heatmaps placed beside segmentations invite a simple reading: *the bright pixels are the reason the model drew what it drew.* Yet segmentation heatmaps are almost always evaluated purely by eye.
-
-This study asks three quantitative questions:
-1. **Does the attribution map reflect what the network computed, or does it simply redraw the predicted mask?**
-2. **Is explanation quality uniform across tissue types and staining conditions, given that segmentation accuracy already differs across them?**
-3. **Can explanation quality warn clinicians when a segmentation has failed?**
-
-To answer these questions, we introduce a deliberately plain yardstick: a **gradient-free control baseline** derived directly from the network's own class-score map ($\text{ReLU}(\text{logit}_c)$ inside the predicted region). If an attribution map requiring gradients and backward passes performs no better at ranking pixels than this gradient-free score map, it is merely copying the prediction—however convincing it looks.
-
-Across **3,180 image-level evaluations** spanning three segmentation architectures, four held-out folds, and two independent histopathology datasets (PanNuke and external MoNuSeg), we audit six attribution configurations against this control.
+Attribution heatmaps are often read as "the bright pixels are why the model drew what it drew", but are rarely tested. We compare each map with a **gradient-free control** built from the network's own class-score map. If a gradient-based map ranks pixels no better than this control, it is copying the prediction. We audit six attribution configurations across 3,180 image-level evaluations (three architectures, four folds, PanNuke and external MoNuSeg), and ask whether the maps reflect the computation, whether their quality is uniform across tissue and stain, and whether they can warn of a failed segmentation.
 
 ---
 
@@ -65,53 +67,14 @@ We evaluate four distinct experimental studies to ensure findings are not quirks
 
 ## Key Findings
 
-### 1. Decoder-Level Maps Redraw the Prediction ($r = 0.95 - 0.99$)
-Decoder Seg-Grad-CAM correlates $0.95$ to $0.99$ with the gradient-free score control in every study (A: $0.991$, B: $0.977$, C: $0.946$, D: $0.963$), and its deletion gain differs from the control's by at most $0.013$. Because the final decoder block feeds directly into a $1 \times 1$ convolutional segmentation head, spatial gradients inside the nucleus region are nearly constant; channel weights provide virtually zero spatial information beyond the predicted class score itself.
+1. **Decoder maps redraw the prediction.** Decoder Seg-Grad-CAM correlates 0.95 to 0.99 with the score-map control in every study (A: 0.991) and gains no more than the control.
+2. **Looking deeper does not help.** Encoder-level maps and LRP rank pixels worse than random inside the explained region in all four studies (deletion gain −0.06 to −0.38), although they look localized.
+3. **Stability masks a stain effect.** Decoder maps look more stable in dark-stained images (pooled p < 10⁻²⁰) while Dice does not differ. Part of this is copying; the effect survives adjustment in three of four studies.
+4. **Failure detection depends on the model.** On the tuned model (A), explanation signals add nothing to predictive uncertainty (AUROC 0.872 → 0.862). On the weaker models (B, D) they help modestly (+0.034, +0.014).
 
-### 2. Looking Deeper Does Not Help ($\Delta = -0.06 \text{ to } -0.38$)
-Encoder-level attribution maps (CAM and HiResCAM at Stage 4) and LRP rank pixels **worse than random chance** inside the explained region across all four studies ($\Delta$ between $-0.06$ and $-0.38$). Even though encoder maps and LRP appear visually localized (localization enrichment $3.3\times$ to $4.0\times$), pixel-deletion reveals their ranking inside the region is worse than random selection. An encoder depth sweep across all stages (Figure 2) reveals no intermediate layer that is both faithful and not a copy. Furthermore, an LRP ablation across three distinct propagation rules confirms this negative deletion gain is invariant to the choice of LRP rule.
+Full tables with confidence intervals (deletion gain, failure detection, stain stability) are in [`docs/EXPLANATION_AUDIT.md`](docs/EXPLANATION_AUDIT.md#results) and the manuscript.
 
-### 3. Explanation Stability Masks a Stain Effect ($p < 10^{-20}$)
-Decoder maps appear significantly more stable under stain jitter in dark-stained images across every study (pooled probability that a dark image is more stable than a bright one: $0.73$ over 179 dark images, $p < 10^{-20}$), while segmentation Dice shows no consistent difference (pooled $0.52, p = 0.32$). Because stable maps also copy the prediction more closely, we adjusted for agreement with the control; the dark-stain stability gap survives adjustment in three of four studies (+0.045, +0.078, +0.090, +0.020).
-
-### 4. Failure Detection is Model-Dependent
-Can explanation signals warn clinicians when a segmentation is wrong ($\text{Dice} < 0.5$)? On the tuned model (Study A), adding explanation features to predictive uncertainty adds nothing to failure detection ($\text{AUROC } 0.872 \to 0.862, \Delta = -0.010$). On weaker models (B and D), explanation metrics offer modest improvements ($+0.034$ and $+0.014$ AUROC). Explanation quality cannot be assumed to reliably signal segmentation failure.
-
----
-
-## Quantitative Results (Paper Tables & Figures)
-
-### Table 2: Deletion Gain Over Region-Random Pixels
-Mean deletion gain $\Delta$ over random pixels inside the explained region (with 95% bootstrap confidence intervals). Values above 0 indicate the map ranks pixels better than chance; the control is the network's own class-score map.
-
-| Attribution Map | Study A ($n = 659$) | Study B ($n = 1,333$) | Study C ($n = 200$) | Study D ($n = 988$) |
-|:---|:---:|:---:|:---:|:---:|
-| **Score map (Control)** | **0.023** (0.012, 0.035) | **−0.045** (−0.053, −0.036) | **−0.015** (−0.038, 0.008) | **−0.009** (−0.017, −0.001) |
-| **Seg-Grad-CAM, decoder** | 0.021 (0.010, 0.033) | −0.043 (−0.051, −0.034) | −0.025 (−0.049, −0.002) | −0.022 (−0.030, −0.015) |
-| **HiResCAM-style, decoder** | 0.018 (0.008, 0.029) | −0.035 (−0.043, −0.028) | −0.015 (−0.038, 0.007) | 0.010 (0.004, 0.017) |
-| **Seg-Grad-CAM, encoder** | −0.366 (−0.384, −0.349) | −0.115 (−0.127, −0.103) | −0.296 (−0.329, −0.263) | −0.147 (−0.162, −0.133) |
-| **HiResCAM-style, encoder** | −0.355 (−0.372, −0.337) | −0.077 (−0.088, −0.066) | −0.304 (−0.337, −0.272) | −0.055 (−0.069, −0.041) |
-| **Gradient × Input** | −0.109 (−0.123, −0.095) | 0.016 (0.005, 0.026) | −0.154 (−0.175, −0.131) | 0.025 (0.015, 0.034) |
-| **LRP ($\epsilon, z^+, \text{flat}$)** | −0.309 (−0.330, −0.288) | −0.221 (−0.234, −0.207) | −0.375 (−0.411, −0.340) | −0.172 (−0.186, −0.158) |
-| **Decoder CAM vs Control ($r$)** | **0.991** | **0.977** | **0.946** | **0.963** |
-
----
-
-### Table 3: Failure Detection and Stain Stability
-
-| Metric | Study A | Study B | Study C | Study D |
-|:---|:---:|:---:|:---:|:---:|
-| **Segmentation Failures (Dice < 0.5)** | 75 / 659 | 330 / 1,333 | 0 / 200 | 214 / 988 |
-| **Predictive Uncertainty AUROC** | 0.872 | 0.780 | — | 0.849 |
-| **+ Explanation Signals (Δ AUROC)** | **−0.010** (−0.039, 0.015) | **+0.034** (0.012, 0.057) | — | **+0.014** (0.001, 0.028) |
-| **Dark Effect, raw** | +0.081 | +0.083 | +0.079 | +0.056 |
-| **Dark Effect, adjusted for copying** | **+0.045** (0.013, 0.078) | **+0.078** (0.061, 0.092) | **+0.090** (0.036, 0.162) | +0.020 (−0.029, 0.067) |
-
-*Bold intervals exclude 0. In Study C, zero tiles fell below Dice 0.5, precluding failure classification.*
-
----
-
-### Figure 2: Encoder Depth Sweep
+### Encoder Depth Sweep
 
 <p align="center">
   <img src="assets/depth_sweep.png" width="460" alt="Encoder depth sweep">
@@ -121,24 +84,9 @@ Mean deletion gain $\Delta$ over random pixels inside the explained region (with
 
 ---
 
-## Interactive Visual Analytics Explorer
-
-To let researchers, pathologists, and reviewers inspect the audit directly, we include a self-contained visual analytics dashboard for Study A (659 PanNuke images; Studies B to D are available as per-image CSVs in `results/`):
-
-**Live explorer: [https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)**
-
-- **Filters and Scorecard:** a shared stain and tissue filter bar (19 PanNuke tissue types, 3 stain brightness categories) drives a compact method scorecard.
-- **Interactive Metric Scatter Plots:** Explores the correlation of deletion gain, stability, uncertainty, and control agreement against segmentation Dice.
-- **Side-by-Side Heatmap Viewer:** Click any point to view the H&E patch, ground truth mask, model prediction, class-score control, and all six attribution heatmaps.
-- **Two more tabs, recomputed in your browser from the per-image audit and respecting the filters:**
-  - *Copy detector:* for each attribution method, the distribution of agreement with the model's own score map, with the "copy" zone (r ≥ 0.95) marked.
-  - *Triage simulator:* combine any explanation signals, set a review budget, and see how many segmentation failures you catch compared with uncertainty alone and random order, with AUROC.
-  - *Reliability atlas:* a tissue × signal map of how well each signal tracks Dice, showing where a signal flips sign. Click a cell to open that tissue and signal in the Explore tab.
-  - *Case inspector and difference view:* every image has its full strip (patch, ground truth, prediction and all heatmaps), and any map can be compared with the control pixel by pixel.
-
----
-
 ## Installation & Quickstart
+
+*You do not need to install anything to browse the results: the [live explorer](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/) runs in the browser. Install only to re-run the audits.*
 
 ### Prerequisites
 - Python 3.10 or newer
@@ -169,7 +117,7 @@ pytest -q tests
 
 ## Datasets
 
-| Dataset | Roles in Paper | Acquisition |
+| Dataset | Role in the Study | Acquisition |
 |:---|:---|:---|
 | **[PanNuke](https://arxiv.org/abs/2003.10778)** | Model training and Studies A, B, D (folds 1–3, 19 tissues, 5 nucleus classes) | `python scripts/download_data.py --root data/pannuke` |
 | **[MoNuSeg](https://monuseg.grand-challenge.org/)** | Study C external generalization test (30 whole-slide tiles from multiple centers) | Auto-prepared on first `--dataset monuseg` execution |
@@ -192,7 +140,7 @@ Each checkpoint contains its full hyperparameter specification and state diction
 
 ---
 
-## Reproducing the Paper Experiments
+## Reproducing the Experiments
 
 ### 1. Stage Model Checkpoints
 
@@ -232,7 +180,7 @@ python -m medseg.explain.xai_depth_sweep --run outputs/pannuke_resnet50 --n 100
 python -m medseg.explain.xai_lrp_ablation --run outputs/pannuke_resnet50 --n 60
 ```
 
-### 4. Regenerate Tables, Figures, and Paper Assets
+### 4. Regenerate Tables, Figures, and Result Files
 
 ```bash
 # Generate statistical tables, failure detection models, and bootstrap intervals
@@ -241,7 +189,7 @@ python -m medseg.explain.xai_analysis --run outputs/pannuke_resnet50
 # Replicate side-by-side multi-study synthesis (replication.json, replication_methods.csv)
 python -m medseg.explain.xai_replication --out outputs/replication --studies A,B,C,D
 
-# Regenerate Paper Figure 1 (attribution panels across bright, dark, and failure cases)
+# Regenerate  Figure 1 (attribution panels across bright, dark, and failure cases)
 python -m medseg.viz.paper_figures heatmaps --indices 2199,841,2165 --out assets/heatmap_audit_examples.jpg
 ```
 
@@ -249,12 +197,12 @@ python -m medseg.viz.paper_figures heatmaps --indices 2199,841,2165 --out assets
 
 ## Pre-computed Results in this Repository
 
-Every single measured data point is saved under [`results/`](results/README.md) so the complete paper analysis can be verified instantly without retraining or re-running inference:
+Every single measured data point is saved under [`results/`](results/README.md) so the complete analysis can be verified instantly without retraining or re-running inference:
 
 - **Per-Image Rows:** One row per audited tile with localization, deletion curves, stability, and correlation scores (`rows.csv`, `rows_lrp.csv`, `rows_dark.csv`, `rows_monuseg.csv`).
 - **Statistical Summaries:** Per-tissue and per-stain metrics in `results/pannuke_resnet50/xai_audit/analysis/`.
 - **Cross-Study Replication:** Multi-study synthesis in `results/replication/replication.json`.
-- **Pre-generated Dashboards:** Standalone HTML visualizer in `results/pannuke_resnet50/xai_audit/explorer.html`.
+- **Interactive Explorer:** the [live explorer](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/) is the same page as the standalone HTML file `results/pannuke_resnet50/xai_audit/explorer.html`, which also opens offline.
 
 ---
 
@@ -270,16 +218,14 @@ The audit is built on a segmentation pipeline that is included so the studies ca
 | **Evaluation** | [`medseg/metrics.py`](medseg/metrics.py), [`medseg/evaluate.py`](medseg/evaluate.py) | Per-class Dice and IoU, confusion matrices |
 | **Subgroup disparity** | [`medseg/fairness/`](medseg/fairness) | Tissue-level and stain-level disparity used in the subgroup analysis |
 | **Data** | [`medseg/data/`](medseg/data) | PanNuke and MoNuSeg loaders |
-| **Figures and explorer** | [`medseg/viz/`](medseg/viz) | Interactive explorer builder and paper figures |
-
-The earlier standalone project (segmentation pipeline with a Hugging Face demo, drift monitoring, and governance documents) is archived at [`MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline-old`](https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline-old).
+| **Figures and explorer** | [`medseg/viz/`](medseg/viz) | Interactive explorer builder and figure scripts |
 
 ---
 
 ## Repository Structure
 
 ```
-├── assets/                     # Paper figures
+├── assets/                     # Figures
 ├── checkpoints/                # Trained model weights for Studies A, B, D (Git LFS)
 │   ├── SHA256SUMS.txt          # Cryptographic checksums
 │   └── README.md               # Checkpoint descriptions and usage
@@ -292,7 +238,7 @@ The earlier standalone project (segmentation pipeline with a Hugging Face demo, 
 │   ├── fairness/               # Subgroup disparity
 │   ├── models/                 # Model builders and wrappers
 │   ├── metrics.py              # Segmentation evaluation metrics
-│   └── viz/                    # Interactive explorer builder and paper figures
+│   └── viz/                    # Interactive explorer builder and figure scripts
 ├── results/                    # Per-image CSV logs, summaries, and explorer.html
 ├── scripts/                    # Data download helper
 ├── tests/                      # Automated unit and integration tests
@@ -305,7 +251,7 @@ The earlier standalone project (segmentation pipeline with a Hugging Face demo, 
 
 ## Scientific Scope & Limitations
 
-As detailed in the paper:
+The study has these limits:
 1. **Histopathology Modality:** Experiments evaluate nuclear instance/semantic segmentation in H&E-stained tiles from PanNuke and MoNuSeg. Findings should not be extrapolated to whole-slide multi-organ CT or MRI without explicit testing.
 2. **Model Diversity:** Models B and D were deliberately trained for 3 and 4 epochs to act as audit subjects of differing capability (foreground Dice ~0.50); findings on them characterize weaker models rather than tuned segmenters.
 3. **LRP Relevance Conservation:** Under our segmentation setup, total input relevance varies between $-14\%$ and $+16\%$ of the explained logit score. LRP maps should be interpreted as localized sensitivity indicators rather than strict mathematical conservation decompositions.
