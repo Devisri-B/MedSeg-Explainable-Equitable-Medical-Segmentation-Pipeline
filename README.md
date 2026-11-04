@@ -22,7 +22,6 @@ A browser-based tool for testing the 's claims on real images. For each of 659 P
 - **Failure triage:** simulates flagging bad segmentations (Dice < 0.5) from explanation measures, with a ranking-quality score (AUROC) and a chart of how many failures you catch for a given review budget.
 - **Reliability atlas:** a tissue-by-measure grid showing where an explanation measure tracks segmentation quality and where it doesn't.
 
-Studies B to D are available as per-image CSVs in [`results/`](results/README.md)
 ---
 
 ![Attribution maps for three PanNuke images](assets/heatmap_audit_examples.jpg)
@@ -258,27 +257,6 @@ The study has these limits:
 4. **Deletion Protocols:** Pixel deletion substitutes uninformative ImageNet mean color into masked locations. While standard in XAI literature, synthetic pixel filling alters image statistics; this motivates our comparison against region-restricted random baselines.
 5. **Observational Staining Proxy:** Stain brightness serves as an observational proxy for laboratory, scanner, and protocol differences, rather than a direct physical measurement.
 6. **Sensitivity vs. Causation:** Saliency maps quantify mathematical model sensitivity, not histological causation in tissue pathology.
-
----
-
-## Citation
-
-If you use this codebase, checkpoints, or findings in your research, please cite:
-
-```bibtex
-@article{bandaru2026heatmaps,
-  title   = {Heatmaps That Redraw the Prediction: A Control-Based Audit of Attribution Maps for Nucleus Segmentation in Histopathology},
-  author  = {Bandaru, Devi Sri and Bhati, Deepshikha},
-  journal = {arXiv preprint},
-  year    = {2026},
-  url     = {https://github.com/Devisri-B/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline}
-}
-```
-
-Please also cite the foundational benchmark datasets and tools:
-- **PanNuke:** Gamper et al., *PanNuke: An Open Pan-Cancer Histology Dataset for Nuclei Instance Segmentation and Classification*, CMPB 2019 / arXiv 2020.
-- **MoNuSeg:** Kumar et al., *A Dataset and a Technique for Generalized Nuclear Segmentation for Computational Pathology*, IEEE TMI 2017.
-- **Zennit:** Anders et al., *Software for Dataset-wide XAI: From Local Explanations to Global Insights with Zennit, Corelay, and Virelay*, PLoS ONE 2026.
 
 ---
 
