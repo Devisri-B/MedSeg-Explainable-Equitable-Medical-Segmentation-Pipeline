@@ -111,6 +111,52 @@ h3 { font-size: 0.92rem; margin: 0 0 6px; letter-spacing: -0.005em; }
 .dcanv figure { margin: 0; display: grid; gap: 3px; }
 .dcanv canvas { width: 100%; aspect-ratio: 1; border-radius: 4px; image-rendering: pixelated; background: #000; }
 .dcanv figcaption { font-size: 0.72rem; color: var(--muted); }
+
+/* Structure: shared filter bar, three tabs */
+.filterbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; }
+.filterbar .chips { margin: 0; }
+.fl { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+.tabbar { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 2px solid var(--line); }
+.tabbar button { border: 0; background: none; padding: 9px 14px; cursor: pointer; color: var(--muted); font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.tabbar button:hover { color: var(--fg); }
+.tabbar button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tabpanel { display: grid; gap: 14px; }
+.tabpanel[hidden] { display: none; }
+.two { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.narrow { max-width: 640px; }
+#trisvg { max-width: 470px; } .narrow.wide { max-width: 860px; }
+table.sc { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+table.sc th { text-align: right; font-weight: 600; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0 6px 8px; }
+table.sc th:first-child, table.sc td:first-child { text-align: left; padding-left: 0; }
+table.sc td { padding: 5px 0 5px 8px; text-align: right; border-top: 1px solid var(--line); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+table.sc td:first-child { font-family: var(--font-body); }
+table.sc tr.ctl td { color: var(--muted); }
+.hot { color: var(--fail); font-weight: 600; }
+
+/* Explore tab: scorecard on top, scatter and case inspector side by side */
+.explore { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 14px; align-items: start; }
+.sticky { position: sticky; top: 12px; }
+#score { overflow-x: auto; }
+#score table { min-width: 640px; }
+@media (max-width: 1000px) { .explore { grid-template-columns: minmax(0, 1fr); } .sticky { position: static; } }
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 6px; margin: 6px 0; }
+.tiles figure { margin: 0; display: grid; gap: 2px; }
+.tiles canvas { width: 100%; aspect-ratio: 1; border-radius: 4px; background: #000; image-rendering: auto; outline: 2px solid transparent; }
+.tiles figcaption { font-size: 0.68rem; color: var(--muted); text-align: center; line-height: 1.2; }
+.tiles .pick { cursor: pointer; }
+.tiles .pick:hover canvas { outline-color: var(--line); }
+.tiles .pick.sel canvas { outline-color: var(--accent); }
+.tiles .pick.sel figcaption { color: var(--accent); font-weight: 600; }
+.dcanv { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+table.sc.h th, table.sc.h td { text-align: center; }
+table.sc.h th:first-child, table.sc.h td:first-child { text-align: left; }
+table.sc.h th { text-transform: none; letter-spacing: 0; font-size: 0.74rem; padding: 0 6px 6px; vertical-align: bottom; }
+table.sc.h td { padding: 5px 6px; }
+.zoomtools { display: inline-flex; gap: 4px; margin-left: auto; }
+.zoomtools .chip { padding: 2px 10px; }
+.zoomtools .chip:disabled { opacity: 0.4; cursor: default; }
+#plot { touch-action: none; cursor: crosshair; }
 </style>
 
 <div class="wrap">
@@ -120,61 +166,69 @@ h3 { font-size: 0.92rem; margin: 0 0 6px; letter-spacing: -0.005em; }
     <div class="stats" id="stats" aria-live="polite"></div>
   </header>
 
-  <div class="grid">
-    <section class="panel" aria-label="Filters">
-      <h2>Stain brightness</h2>
-      <div class="chips" id="bchips"></div>
-      <h2>Tissue (bar: Dice of explained class)</h2>
-      <div class="tissues" id="tissues"></div>
-    </section>
-
-    <section class="panel" aria-label="Scatter">
-      <div class="tools">
-        <label for="xsel">Explanation signal</label>
-        <select id="xsel"></select>
-        <button class="chip" id="failtog" aria-pressed="false">Failures only</button>
-      </div>
-      <svg id="plot" viewBox="0 0 640 400" role="img" aria-label="Segmentation quality against the chosen explanation signal"></svg>
-      <p class="note" id="plotnote"></p>
-    </section>
-
-    <section class="panel" aria-label="Methods">
-      <h2>Method scorecard (filtered images)</h2>
-      <div class="score" id="score"></div>
-    </section>
+  <div class="filterbar" role="group" aria-label="Filters for every tab">
+    <span class="fl">Stain</span><div class="chips" id="bchips"></div>
+    <label class="fl" for="tsel">Tissue</label><select id="tsel"></select>
+    <button class="chip" id="reset" type="button">Reset filters</button>
   </div>
 
-  <section class="panel case" aria-label="Selected case">
-    <h2>Selected case</h2>
-    <div class="finder"><span class="note" style="margin:0">Jump to:</span>
-      <button class="btn" id="fcopy">Model failed, map just re-draws its prediction</button>
-      <button class="btn" id="findep">Model failed, map is independent of its prediction</button>
-      <span class="note" id="fnote" style="margin:0"></span></div>
-    <div id="case"><div class="empty">Click a point in the scatter to see that image, the model's prediction and each explanation.</div></div>
+  <nav class="tabbar" role="tablist" aria-label="Views">
+    <button role="tab" id="tb-explore" data-tab="explore" aria-selected="true">Explore the audit</button>
+    <button role="tab" id="tb-copy" data-tab="copy" aria-selected="false">Do the maps copy the prediction?</button>
+    <button role="tab" id="tb-warn" data-tab="warn" aria-selected="false">Can a map warn of failure?</button>
+  </nav>
+
+  <section class="tabpanel" id="tab-explore" role="tabpanel" aria-labelledby="tb-explore">
+    <div class="explore">
+      <div class="panel">
+        <h2>Segmentation quality against one signal. Click a dot to inspect it.</h2>
+        <div class="tools">
+          <label for="xsel">Signal</label><select id="xsel"></select>
+          <button class="chip" id="failtog" aria-pressed="false">Failures only</button>
+          <span class="zoomtools" role="group" aria-label="Zoom"><button class="chip" id="zin" title="Zoom in">+</button><button class="chip" id="zout" title="Zoom out">&minus;</button><button class="chip" id="zreset" title="Show everything">Reset zoom</button><button class="chip" id="pl" title="Move left">&larr;</button><button class="chip" id="pu" title="Move up">&uarr;</button><button class="chip" id="pd" title="Move down">&darr;</button><button class="chip" id="pr" title="Move right">&rarr;</button></span>
+        </div>
+        <svg id="plot" viewBox="0 0 640 450" role="img" aria-label="Segmentation quality against the chosen explanation signal"></svg>
+        <p class="note" id="plotnote"></p>
+      </div>
+      <div class="panel case sticky" aria-label="Selected case">
+        <h2>Case inspector</h2>
+        <div id="case"><div class="empty">Click a point in the scatter to see that image, the model's prediction and each explanation.</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Method scorecard (filtered images)</h2>
+      <div id="score"></div>
+    </div>
   </section>
 
-  <section class="panel" aria-label="Audit lab">
-    <h2>Audit lab: check the paper's claims on the data yourself</h2>
-    <p class="lede2">Everything below uses the filters above (stain brightness, tissue). Nothing is precomputed: it is recalculated in your browser from the per-image audit.</p>
-    <div class="labgrid">
-      <div class="lab">
-        <h3>1. Which maps just re-draw the prediction?</h3>
-        <svg id="copysvg" viewBox="0 0 540 272" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg>
-        <p class="note" id="copynote"></p>
-      </div>
-      <div class="lab">
-        <h3>2. Can a heatmap warn you the model is wrong? Try to beat uncertainty.</h3>
-        <div class="sigs" id="sigchips" role="group" aria-label="Signals to combine"></div>
-        <div class="budget"><label for="bud">Images you can review</label><input type="range" id="bud" min="5" max="50" step="5" value="20"><b id="budv" class="num" style="color:var(--fg)">20%</b></div>
-        <svg id="trisvg" viewBox="0 0 360 230" role="img" aria-label="Share of segmentation failures caught against share of images reviewed"></svg>
-        <div class="legend"><span style="color:var(--accent)"><i></i>your combination</span><span style="color:var(--fail)"><i style="border-top-style:dashed"></i>uncertainty only</span><span><i style="border-top-color:var(--muted);border-top-style:dotted"></i>random order</span></div>
+  <section class="tabpanel" id="tab-copy" role="tabpanel" aria-labelledby="tb-copy" hidden>
+    <div class="panel">
+      <h2>Do the maps copy the prediction?</h2>
+      <p class="lede2">The control is a heatmap that uses no gradients: just the model's own score for the class. If an attribution map agrees with it at r = 0.95 or more, the map adds nothing beyond the prediction. Each row is one method.</p>
+      <div class="narrow"><svg id="copysvg" viewBox="0 0 540 272" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
+      <p class="note" id="copynote"></p>
+      <button class="btn" id="tocopy" type="button">See a failed case where the map copies the prediction</button>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="tab-warn" role="tabpanel" aria-labelledby="tb-warn" hidden>
+    <div class="panel">
+      <h2>Can a heatmap warn you the model is wrong? Try to beat uncertainty.</h2>
+      <p class="lede2">Pick signals to combine and how many images you can afford to review. A failure is a Dice below 0.5. The curve shows what share of failures you catch by reviewing the riskiest images first.</p>
+      <div class="two">
+        <div>
+          <div class="sigs" id="sigchips" role="group" aria-label="Signals to combine"></div>
+          <div class="budget"><label for="bud">Images you can review</label><input type="range" id="bud" min="5" max="50" step="5" value="20"><b id="budv" class="num" style="color:var(--fg)">20%</b></div>
+          <svg id="trisvg" viewBox="0 0 360 230" role="img" aria-label="Share of segmentation failures caught against share of images reviewed"></svg>
+          <div class="legend"><span style="color:var(--accent)"><i></i>your combination</span><span style="color:var(--fail)"><i style="border-top-style:dashed"></i>uncertainty only</span><span><i style="border-top-color:var(--muted);border-top-style:dotted"></i>random order</span></div>
+        </div>
         <div class="readout" id="triread"></div>
       </div>
-      <div class="lab wide">
-        <h3>3. Reliability atlas: where does each signal track segmentation quality?</h3>
-        <svg id="atlas" viewBox="0 0 760 470" role="img" aria-label="Correlation of each explanation signal with Dice, by tissue"></svg>
-        <p class="note" id="atlasnote"></p>
-      </div>
+    </div>
+    <div class="panel">
+      <h2>Where does each signal track segmentation quality?</h2>
+      <div class="narrow wide"><svg id="atlas" viewBox="0 0 760 528" role="img" aria-label="Correlation of each explanation signal with Dice, by tissue"></svg></div>
+      <p class="note" id="atlasnote"></p>
     </div>
   </section>
 
@@ -201,7 +255,7 @@ function build() {
   const xs = $("xsel");
   DATA.signals.forEach((s) => { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; xs.appendChild(o); });
   xs.value = state.x;
-  xs.onchange = () => { state.x = xs.value; draw(); };
+  xs.onchange = () => { state.x = xs.value; state.view = null; draw(); };
   $("failtog").onclick = (e) => { state.failOnly = !state.failOnly; e.currentTarget.setAttribute("aria-pressed", state.failOnly); draw(); };
   const bc = $("bchips");
   ["dark", "medium", "bright"].forEach((b) => {
@@ -211,68 +265,118 @@ function build() {
     bc.appendChild(c);
   });
   $("foot").textContent = DATA.footer;
+  const ts = $("tsel"); ts.innerHTML = '<option value="">All tissues</option>' + [...new Set(DATA.rows.map((r) => r.t))].sort().map((t) => `<option>${t}</option>`).join("");
+  ts.onchange = () => { state.tissue = ts.value || null; draw(); };
+  $("reset").onclick = () => { state.tissue = null; state.failOnly = false; state.bright = new Set(["dark", "medium", "bright"]); $("failtog").setAttribute("aria-pressed", false); [...$("bchips").children].forEach((c) => c.setAttribute("aria-pressed", true)); draw(); };
+  document.querySelectorAll(".tabbar button").forEach((b) => { b.onclick = () => showTab(b.dataset.tab); b.onkeydown = (e) => { const t = [...document.querySelectorAll(".tabbar button")]; const i = t.indexOf(b); if (e.key === "ArrowRight") t[(i + 1) % t.length].focus(); if (e.key === "ArrowLeft") t[(i + t.length - 1) % t.length].focus(); }; });
+  $("tocopy").onclick = () => { showTab("explore"); window.jumpCase("copy"); };
+
   draw();
 }
 
-function drawTissues() {
-  const by = {};
-  DATA.rows.filter((r) => state.bright.has(r.b)).forEach((r) => { (by[r.t] = by[r.t] || []).push(r); });
-  const names = Object.keys(by).sort((a, b) => mean(by[a].map((r) => r.d)) - mean(by[b].map((r) => r.d)));
-  const box = $("tissues"); box.innerHTML = "";
-  names.forEach((t) => {
-    const d = mean(by[t].map((r) => r.d));
-    const btn = document.createElement("button"); btn.className = "trow"; btn.setAttribute("aria-pressed", state.tissue === t);
-    btn.innerHTML = `<span title="${t}">${t}</span><span class="bar"><b style="width:${Math.max(0, Math.min(1, d)) * 100}%"></b></span><span class="num">${fmt(d)}</span>`;
-    btn.onclick = () => { state.tissue = state.tissue === t ? null : t; draw(); };
-    box.appendChild(btn);
-  });
-}
+function drawTissues() { $("tsel").value = state.tissue || ""; }
 
+state.view = null;   // zoom window in data units, or null for the full range
 function drawPlot(rows) {
-  const W = 640, H = 400, m = { l: 46, r: 14, t: 12, b: 40 };
+  const W = 640, H = 450, m = { l: 46, r: 14, t: 12, b: 40 };
   const key = state.x, sig = DATA.signals.find((s) => s.key === key);
   const pts = rows.map((r) => ({ r, x: r.v[key] })).filter((p) => p.x !== null && p.x !== undefined && !Number.isNaN(p.x));
   const allx = DATA.rows.map((r) => r.v[key]).filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
   let lo = Math.min(...allx), hi = Math.max(...allx); if (lo === hi) { lo -= 0.5; hi += 0.5; }
   const pad = (hi - lo) * 0.04; lo -= pad; hi += pad;
-  const sx = (v) => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
-  const sy = (v) => H - m.b - v * (H - m.t - m.b);
-  let s = "";
-  for (let g = 0; g <= 4; g++) { const v = g / 4; s += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)" stroke-width="1"/><text x="${m.l - 6}" y="${sy(v) + 3}" text-anchor="end">${v.toFixed(2)}</text>`; }
-  for (let g = 0; g <= 4; g++) { const v = lo + (hi - lo) * g / 4; s += `<text x="${sx(v)}" y="${H - m.b + 15}" text-anchor="middle">${v.toFixed(2)}</text>`; }
-  s += `<rect x="${m.l}" y="${sy(FAIL)}" width="${W - m.l - m.r}" height="${H - m.b - sy(FAIL)}" fill="var(--fail-soft)" opacity="0.55"/>`;
-  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(FAIL)}" y2="${sy(FAIL)}" stroke="var(--fail)" stroke-dasharray="4 3"/><text x="${W - m.r - 4}" y="${sy(FAIL) - 4}" text-anchor="end" style="fill:var(--fail)">failure: Dice below ${FAIL}</text>`;
+  const full = { x0: lo, x1: hi, y0: 0, y1: 1 };
+  const V = state.view || full;
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const sx = (v) => m.l + (v - V.x0) / (V.x1 - V.x0) * pw;
+  const sy = (v) => H - m.b - (v - V.y0) / (V.y1 - V.y0) * ph;
+  const dx = (u) => V.x0 + (u - m.l) / pw * (V.x1 - V.x0), dy = (u) => V.y0 + (H - m.b - u) / ph * (V.y1 - V.y0);
+  let s = `<defs><clipPath id="pc"><rect x="${m.l - 10}" y="${m.t - 10}" width="${pw + 20}" height="${ph + 20}"/></clipPath></defs>`;
+  const dec = (V.x1 - V.x0) < 0.3 ? 3 : 2, decy = (V.y1 - V.y0) < 0.3 ? 3 : 2;
+  for (let g = 0; g <= 4; g++) { const v = V.y0 + (V.y1 - V.y0) * g / 4; s += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)" stroke-width="1"/><text x="${m.l - 6}" y="${sy(v) + 3}" text-anchor="end">${v.toFixed(decy)}</text>`; }
+  for (let g = 0; g <= 4; g++) { const v = V.x0 + (V.x1 - V.x0) * g / 4; s += `<text x="${sx(v)}" y="${H - m.b + 15}" text-anchor="middle">${v.toFixed(dec)}</text>`; }
+  s += `<g clip-path="url(#pc)"><rect x="${m.l}" y="${sy(FAIL)}" width="${pw}" height="${ph * 4}" fill="var(--fail-soft)" opacity="0.55"/>` +
+       `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(FAIL)}" y2="${sy(FAIL)}" stroke="var(--fail)" stroke-dasharray="4 3"/></g>`;
+  if (FAIL > V.y0 && FAIL < V.y1) s += `<text x="${W - m.r - 4}" y="${sy(FAIL) - 4}" text-anchor="end" style="fill:var(--fail)">failure: Dice below ${FAIL}</text>`;
   s += `<text x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle">${sig.label}</text>`;
   s += `<text transform="translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle">Dice of the explained class</text>`;
-  pts.forEach((p, i) => {
+  pts.sort((a, b) => (state.sel === a.r.i) - (state.sel === b.r.i));   // selected dot last, so it sits on top
+  s += `<g clip-path="url(#pc)">`;
+  pts.forEach((p) => {
     const sel = state.sel === p.r.i;
-    s += `<circle class="pt" tabindex="0" data-i="${p.r.i}" cx="${sx(p.x).toFixed(1)}" cy="${sy(Math.max(0, Math.min(1, p.r.d))).toFixed(1)}" r="${sel ? 6.5 : 3.6}" fill="${BCOL[p.r.b]}" fill-opacity="${sel ? 1 : 0.78}" stroke="${sel ? "var(--fg)" : "var(--panel)"}" stroke-width="${sel ? 2 : 0.8}"><title>${p.r.t} · Dice ${fmt(p.r.d)}</title></circle>`;
+    s += `<circle class="pt" tabindex="0" data-i="${p.r.i}" cx="${sx(p.x).toFixed(1)}" cy="${sy(Math.max(0, Math.min(1, p.r.d))).toFixed(1)}" r="${sel ? 9 : 5.6}" fill="${BCOL[p.r.b]}" fill-opacity="${sel ? 1 : 0.78}" stroke="${sel ? "var(--fg)" : "var(--panel)"}" stroke-width="${sel ? 2.5 : 1}"><title>${p.r.t} · Dice ${fmt(p.r.d)}</title></circle>`;
   });
+  s += `</g><rect id="rb" x="0" y="0" width="0" height="0" fill="var(--accent)" fill-opacity="0.12" stroke="var(--accent)" stroke-dasharray="4 3" style="display:none;pointer-events:none"/>`;
   const svg = $("plot"); svg.innerHTML = s;
-  svg.querySelectorAll(".pt").forEach((c) => { const go = () => { state.sel = Number(c.dataset.i); draw(); }; c.onclick = go; c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } }; });
+  const pick = (i) => { state.sel = Number(i); draw(); };
+  svg.querySelectorAll(".pt").forEach((c) => { c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(c.dataset.i); } }; });
+  const toSvg = (e) => { const q = svg.createSVGPoint(); q.x = e.clientX; q.y = e.clientY; return q.matrixTransform(svg.getScreenCTM().inverse()); };
+  const inside = (u) => ({ x: Math.max(m.l, Math.min(W - m.r, u.x)), y: Math.max(m.t, Math.min(H - m.b, u.y)) });
+  let drag = null, dragged = false;
+  svg.onpointerdown = (e) => { if (e.button !== 0) return; drag = inside(toSvg(e)); dragged = false; svg.setPointerCapture(e.pointerId); };
+  svg.onpointermove = (e) => {
+    if (!drag) return;
+    const u = inside(toSvg(e)), rb = $("rb");
+    if (Math.hypot(u.x - drag.x, u.y - drag.y) > 8) dragged = true;
+    if (dragged) { rb.style.display = ""; rb.setAttribute("x", Math.min(u.x, drag.x)); rb.setAttribute("y", Math.min(u.y, drag.y)); rb.setAttribute("width", Math.abs(u.x - drag.x)); rb.setAttribute("height", Math.abs(u.y - drag.y)); }
+  };
+  svg.onpointerup = (e) => {
+    if (!drag) return;
+    const u = inside(toSvg(e)), a = drag; drag = null;
+    if (dragged && Math.abs(u.x - a.x) > 8 && Math.abs(u.y - a.y) > 8) {
+      state.view = { x0: dx(Math.min(a.x, u.x)), x1: dx(Math.max(a.x, u.x)), y0: dy(Math.max(a.y, u.y)), y1: dy(Math.min(a.y, u.y)) };
+      draw();
+    } else { $("rb").style.display = "none"; }
+  };
+  svg.onclick = (e) => {   // a plain click: the dot nearest to the cursor wins, so dense areas are easy to hit
+    if (dragged) { dragged = false; return; }
+    const t = e.target.closest && e.target.closest(".pt");
+    if (!e.detail && t) return pick(t.dataset.i);
+    const u = toSvg(e);
+    let best = null, bd = 16;
+    svg.querySelectorAll(".pt").forEach((c) => { const d = Math.hypot(Number(c.getAttribute("cx")) - u.x, Number(c.getAttribute("cy")) - u.y); if (d < bd) { bd = d; best = c; } });
+    if (best) pick(best.dataset.i);
+  };
+  svg.ondblclick = () => { if (state.view) { state.view = null; draw(); } };
+  const zoomBy = (f) => {
+    const c = { x: (V.x0 + V.x1) / 2, y: (V.y0 + V.y1) / 2 }, hw = (V.x1 - V.x0) / 2 * f, hh = (V.y1 - V.y0) / 2 * f;
+    const nv = { x0: c.x - hw, x1: c.x + hw, y0: c.y - hh, y1: c.y + hh };
+    state.view = (nv.x1 - nv.x0 >= full.x1 - full.x0 || nv.y1 - nv.y0 >= 1) ? null : nv; draw();
+  };
+  $("zin").onclick = () => zoomBy(0.5); $("zout").onclick = () => zoomBy(2);
+  $("zreset").onclick = () => { state.view = null; draw(); };
+  $("zreset").disabled = !state.view; $("zout").disabled = !state.view;
+  const panBy = (fx, fy) => {   // move the zoom window by a fraction of its size, staying inside the data range
+    if (!state.view) return;
+    const w = V.x1 - V.x0, h = V.y1 - V.y0;
+    const x0 = Math.max(full.x0, Math.min(full.x1 - w, V.x0 + fx * w)), y0 = Math.max(0, Math.min(1 - h, V.y0 + fy * h));
+    state.view = { x0, x1: x0 + w, y0, y1: y0 + h };
+  };
+  [["pl", -0.4, 0], ["pr", 0.4, 0], ["pu", 0, 0.4], ["pd", 0, -0.4]].forEach(([id, fx, fy]) => { $(id).disabled = !state.view; $(id).onclick = () => { panBy(fx, fy); draw(); }; });
+  let wq = null;
+  svg.onwheel = (e) => {   // scroll to move around while zoomed; at full range the page scrolls as usual
+    if (!state.view) return;
+    e.preventDefault();
+    const horiz = e.shiftKey ? (e.deltaY || e.deltaX) : e.deltaX, vert = e.shiftKey ? 0 : e.deltaY;
+    panBy(horiz / pw, -vert / ph);
+    if (!wq) wq = requestAnimationFrame(() => { wq = null; draw(); });
+  };
   const rho = spearman(pts.map((p) => p.x), pts.map((p) => p.r.d));
-  $("plotnote").textContent = `Spearman correlation with Dice across the ${pts.length} images shown: ${fmt(rho)}. ${sig.hint}`;
+  $("plotnote").textContent = `Spearman correlation with Dice across the ${pts.length} images shown: ${fmt(rho)}. ${sig.hint} Drag a box to zoom in; when zoomed, scroll (or use the arrows) to move around, and double-click to reset.`;
 }
 
 function drawScore(rows) {
-  const box = $("score"); box.innerHTML = "";
-  const defs = [
-    ["agree_logit|", "Re-draws the model's own score map (rank correlation)", 0, 1, "Lower is more independent of the prediction"],
-    ["stab_rho|", "Stability under a small stain shift (rank correlation)", 0, 1, "Higher is more stable"],
-    ["del_gain_region|", "Deletion gain over region-random (AUC difference)", -0.3, 0.3, "Higher means the ranking inside the region matters"],
-  ];
-  defs.forEach(([pre, title, lo, hi, hint]) => {
-    const h = document.createElement("div"); h.className = "subhead"; h.textContent = title; box.appendChild(h);
-    DATA.methods.forEach((m) => {
-      const k = pre + m.key; if (pre === "agree_logit|" && m.key === "logit") return;
-      const v = mean(rows.map((r) => r.v[k]));
-      const w = Number.isNaN(v) ? 0 : Math.max(0, Math.min(1, (v - lo) / (hi - lo))) * 100;
-      const el = document.createElement("div"); el.className = "srow";
-      el.innerHTML = `<div class="lab"><span>${m.label}</span><span>${fmt(v)}</span></div><div class="bar"><b style="width:${w}%"></b></div>`;
-      box.appendChild(el);
-    });
-    const p = document.createElement("div"); p.className = "note"; p.textContent = hint; box.appendChild(p);
+  const rowsDef = [["agree_logit|", "Echoes the score map", "Rank agreement with the model's own score map. Red: a copy (r of 0.95 or more). Lower is more independent of the prediction.", (v) => v >= COPY_R],
+                   ["stab_rho|", "Stable under stain shift", "Rank correlation of the map before and after a small stain shift. Higher is more stable.", () => false],
+                   ["del_gain_region|", "Deletion gain", "AUC difference against region-random deletion. Higher means the ranking inside the region matters.", () => false]];
+  let h = `<table class="sc h"><thead><tr><th></th>${DATA.methods.map((m) => `<th>${m.key === "logit" ? "Control (score map)" : mname(m)}</th>`).join("")}</tr></thead><tbody>`;
+  rowsDef.forEach(([pre, title, tip, hot]) => {
+    h += `<tr><td title="${tip}">${title}</td>` + DATA.methods.map((m) => {
+      if (pre === "agree_logit|" && m.key === "logit") return "<td>–</td>";
+      const v = mean(rows.map((r) => r.v[pre + m.key]));
+      return `<td class="${!Number.isNaN(v) && hot(v) ? "hot" : ""}">${fmt(v)}</td>`;
+    }).join("") + "</tr>";
   });
+  $("score").innerHTML = h + "</tbody></table>";
 }
 
 function drawCase() {
@@ -281,12 +385,45 @@ function drawCase() {
   if (!r) return;
   const fail = r.d < FAIL;
   let html = `<div class="meta"><span>${r.t}</span><span>${r.b} stain</span><span>Dice ${fmt(r.d)}</span><span>uncertainty ${fmt(r.v.entropy_region)}</span><span class="tag ${fail ? "fail" : "ok"}">${fail ? "segmentation failure" : "segmentation ok"}</span></div>`;
-  if (r.img) {
-    html += `<div class="strip"><div class="strip-inner"><div class="labels">${DATA.tile_labels.map((l) => `<span>${l}</span>`).join("")}</div><img alt="Image, ground truth, prediction and explanation maps for this case" src="data:image/jpeg;base64,${r.img}"></div></div>`;
-  } else {
-    html += `<div class="empty">This image was audited but its picture is not included in the page. Cases with pictures are the lowest-, highest- and a random-Dice image from each tissue.</div>`;
-  }
-  box.innerHTML = html; diffView(r);
+  if (!r.img) { box.innerHTML = html + `<div class="empty">No picture for this image.</div>`; return; }
+  const meths = DATA.methods.filter((m) => m.key !== "logit");
+  html += `<div class="tiles" id="tiles"></div><div class="diff"><div class="tools"><label for="dsel">Compare with the model's own score map:</label><select id="dsel">${meths.map((m) => `<option value="${m.key}">${mname(m)}</option>`).join("")}</select></div>` +
+    `<div class="dcanv"><figure><canvas id="dc1"></canvas><figcaption id="dcap1"></figcaption></figure><figure><canvas id="dc2"></canvas><figcaption>Score map (control)</figcaption></figure><figure><canvas id="dc3"></canvas><figcaption id="dcap3"></figcaption></figure></div></div>`;
+  box.innerHTML = html;
+  $("dsel").value = state.diffm;
+  const im = new Image(), grid = $("tiles");
+  im.onload = () => {
+    if (state.sel !== r.i || !grid.isConnected) return;   // a newer selection replaced this case while the picture loaded
+    const T = im.height, N = Math.round(im.width / T), ctl = N - 1;
+    const tile = (idx) => { const c = document.createElement("canvas"); c.width = c.height = T; const x = c.getContext("2d"); x.drawImage(im, idx * T, 0, T, T, 0, 0, T, T); return x.getImageData(0, 0, T, T); };
+    const show = () => {
+      state.diffm = $("dsel").value;
+      const mi = DATA.methods.findIndex((m) => m.key === state.diffm);
+      grid.querySelectorAll(".pick").forEach((f) => f.classList.toggle("sel", Number(f.dataset.idx) === 3 + mi));
+      const A = tile(3 + mi), B = tile(ctl);
+      const put = (id, img) => { const c = $(id); c.width = c.height = T; c.getContext("2d").putImageData(img, 0, 0); };
+      put("dc1", A); put("dc2", B);
+      const out = new ImageData(T, T); let tot = 0;
+      for (let p = 0; p < A.data.length; p += 4) {
+        const v = (Math.abs(A.data[p] - B.data[p]) + Math.abs(A.data[p + 1] - B.data[p + 1]) + Math.abs(A.data[p + 2] - B.data[p + 2])) / 3;
+        tot += v; const g = Math.min(255, v * 4); out.data[p] = g; out.data[p + 1] = g; out.data[p + 2] = g; out.data[p + 3] = 255;
+      }
+      put("dc3", out);
+      const rr = r.v["agree_logit|" + state.diffm];
+      $("dcap1").textContent = mname(meths[mi]);
+      $("dcap3").textContent = `Difference (mean ${(tot / (T * T) / 2.55).toFixed(1)}%) · r = ${fmt(rr)}${present(rr) && rr >= COPY_R ? " · a copy: almost nothing left" : ""}`;
+    };
+    for (let k = 0; k < N; k++) {
+      const f = document.createElement("figure"); f.dataset.idx = k;
+      const c = document.createElement("canvas"); c.width = c.height = T; c.getContext("2d").putImageData(tile(k), 0, 0);
+      const cap = document.createElement("figcaption"); cap.textContent = DATA.tile_labels[k] || "";
+      f.append(c, cap);
+      if (k >= 3 && k < ctl) { f.className = "pick"; f.title = "Compare this map with the control"; f.onclick = () => { $("dsel").value = DATA.methods[k - 3].key; show(); }; }
+      grid.appendChild(f);
+    }
+    $("dsel").onchange = show; show();
+  };
+  im.src = "data:image/jpeg;base64," + r.img;
 }
 
 /* ---------------- Audit lab ---------------- */
@@ -387,7 +524,7 @@ function drawAtlas() {
   const sigs = DATA.signals, rowsAll = DATA.rows.filter((r) => state.bright.has(r.b));
   const tissues = [...new Set(DATA.rows.map((r) => r.t))].sort();
   const names = ["All tissues", ...tissues];
-  const cw = 46, ch = 18, ml = 92, mt = 112;
+  const cw = 46, ch = 18, ml = 92, mt = 138;
   let s = "";
   sigs.forEach((g, j) => { s += `<text transform="translate(${ml + j * cw + cw / 2 + 4} ${mt - 6}) rotate(-52)" text-anchor="start" style="fill:var(--fg);font-size:10px">${sname(g.key)}</text>`; });
   names.forEach((t, i) => {
@@ -409,11 +546,11 @@ function drawAtlas() {
   });
   $("atlas").innerHTML = s;
   $("atlas").querySelectorAll(".cell").forEach((c) => {
-    const go = () => { state.tissue = c.dataset.t || null; state.x = c.dataset.k; $("xsel").value = state.x; draw(); $("plot").scrollIntoView({ behavior: "smooth", block: "center" }); };
+    const go = () => { state.tissue = c.dataset.t || null; state.x = c.dataset.k; state.view = null; $("xsel").value = state.x; showTab("explore"); draw(); $("plot").scrollIntoView({ behavior: "smooth", block: "center" }); };
     c.onclick = go; c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
   });
   $("atlasnote").textContent = "Each cell is the Spearman correlation between a signal and Dice within one tissue (indigo: higher signal, better segmentation; rose: the reverse; empty: fewer than 12 images). " +
-    "A signal that works overall can flip sign in a tissue. Click a cell to open it in the scatter plot above.";
+    "A signal that works overall can flip sign in a tissue. Click a cell to open that tissue and signal in the Explore tab.";
 }
 
 function drawLab(rows) { drawCopy(rows); drawTriage(rows); drawAtlas(); }
@@ -428,50 +565,22 @@ function initLab() {
   });
   $("bud").oninput = (e) => { state.budget = Number(e.target.value); $("budv").textContent = state.budget + "%"; drawTriage(filtered()); };
   const jump = (kind) => {
-    const key = "agree_logit|hires@dec";
-    const pool = filtered().filter((r) => r.img && r.d < FAIL && present(r.v[key])).sort((a, b) => kind === "copy" ? b.v[key] - a.v[key] : a.v[key] - b.v[key]);
-    if (!pool.length) { $("fnote").textContent = "No failed case with a picture in this selection."; return; }
+    const key = "agree_logit|cam@dec";
+    const pool = filtered().filter((r) => r.img && r.d < FAIL && present(r.v[key])).sort((a, b) => kind === "copy" ? b.v[key] - a.v[key] : a.d - b.d || a.i - b.i);
+    if (!pool.length) return;
     state.cur[kind] = (state.cur[kind] + 1) % pool.length;
     const r = pool[state.cur[kind]]; state.sel = r.i; draw();
-    $("fnote").textContent = `${kind === "copy" ? "Most echoing" : "Most independent"} first, case ${state.cur[kind] + 1} of ${pool.length}. Press again for the next.`;
     $("case").scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  $("fcopy").onclick = () => jump("copy"); $("findep").onclick = () => jump("indep");
+  window.jumpCase = jump;
 }
 
-function diffView(r) {
-  if (!r.img) return;
-  const meths = DATA.methods.filter((m) => m.key !== "logit");
-  const d = document.createElement("div"); d.className = "diff";
-  d.innerHTML = `<div class="tools"><label for="dsel">Compare this map with the model's own score map</label><select id="dsel">${meths.map((m) => `<option value="${m.key}">${mname(m)}</option>`).join("")}</select></div>` +
-    `<div class="dcanv"><figure><canvas id="dc1"></canvas><figcaption id="dcap1"></figcaption></figure><figure><canvas id="dc2"></canvas><figcaption>Score map (control)</figcaption></figure><figure><canvas id="dc3"></canvas><figcaption id="dcap3"></figcaption></figure></div>`;
-  $("case").appendChild(d);
-  $("dsel").value = state.diffm;
-  const im = new Image();
-  im.onload = () => {
-    const T = im.height, N = Math.round(im.width / T), ctl = N - 1;
-    const tile = (idx) => { const c = document.createElement("canvas"); c.width = c.height = T; const x = c.getContext("2d"); x.drawImage(im, idx * T, 0, T, T, 0, 0, T, T); return x.getImageData(0, 0, T, T); };
-    const show = () => {
-      state.diffm = $("dsel").value;
-      const mi = DATA.methods.findIndex((m) => m.key === state.diffm);
-      const A = tile(3 + mi), B = tile(ctl);
-      const put = (id, img) => { const c = $(id); c.width = c.height = T; c.getContext("2d").putImageData(img, 0, 0); };
-      put("dc1", A); put("dc2", B);
-      const out = new ImageData(T, T); let tot = 0;
-      for (let p = 0; p < A.data.length; p += 4) {
-        const v = (Math.abs(A.data[p] - B.data[p]) + Math.abs(A.data[p + 1] - B.data[p + 1]) + Math.abs(A.data[p + 2] - B.data[p + 2])) / 3;
-        tot += v; const g = Math.min(255, v * 4); out.data[p] = g; out.data[p + 1] = g; out.data[p + 2] = g; out.data[p + 3] = 255;
-      }
-      put("dc3", out);
-      const rr = r.v["agree_logit|" + state.diffm];
-      $("dcap1").textContent = mname(meths[mi]);
-      $("dcap3").textContent = `Difference (mean ${(tot / (T * T) / 2.55).toFixed(1)}%) · agreement r = ${fmt(rr)}${present(rr) && rr >= COPY_R ? " · a copy: almost nothing left" : ""}`;
-    };
-    $("dsel").onchange = show; show();
-  };
-  im.src = "data:image/jpeg;base64," + r.img;
+function showTab(name) {
+  document.querySelectorAll(".tabbar button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === name));
+  document.querySelectorAll(".tabpanel").forEach((p) => { p.hidden = p.id !== "tab-" + name; });
+  const fb = document.querySelector(".filterbar"), panel = $("tab-" + name), ex = panel.querySelector(".explore");
+  panel.insertBefore(fb, ex || panel.firstChild);   // Explore: directly above the scatter; other tabs: at the top
 }
-
 function draw() {
   const rows = filtered();
   const fails = rows.filter((r) => r.d < FAIL).length;
@@ -479,5 +588,11 @@ function draw() {
   drawTissues(); drawPlot(rows); drawScore(rows); drawCase(); drawLab(rows);
 }
 initLab();
+showTab("explore");
+(function () {   // open one case by default: the failed case whose Grad-CAM map most closely repeats the prediction
+  const k = "agree_logit|cam@dec";
+  const pool = DATA.rows.filter((r) => r.img && r.d < FAIL && present(r.v[k])).sort((a, b) => b.v[k] - a.v[k]);
+  if (pool.length) { state.sel = pool[0].i; state.cur.copy = 0; }
+})();
 build();
 </script>

@@ -127,14 +127,14 @@ To let researchers, pathologists, and reviewers inspect the audit directly, we i
 
 **Live explorer: [https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)**
 
-- **Per-Tissue & Per-Stain Scorecards:** Real-time filtering across 19 PanNuke tissue types and 3 stain brightness categories.
+- **Filters and Scorecard:** a shared stain and tissue filter bar (19 PanNuke tissue types, 3 stain brightness categories) drives a compact method scorecard.
 - **Interactive Metric Scatter Plots:** Explores the correlation of deletion gain, stability, uncertainty, and control agreement against segmentation Dice.
 - **Side-by-Side Heatmap Viewer:** Click any point to view the H&E patch, ground truth mask, model prediction, class-score control, and all six attribution heatmaps.
-- **Audit Lab (recomputed in your browser from the per-image audit, respecting the filters):**
+- **Two more tabs, recomputed in your browser from the per-image audit and respecting the filters:**
   - *Copy detector:* for each attribution method, the distribution of agreement with the model's own score map, with the "copy" zone (r ≥ 0.95) marked.
   - *Triage simulator:* combine any explanation signals, set a review budget, and see how many segmentation failures you catch compared with uncertainty alone and random order, with AUROC.
-  - *Reliability atlas:* a tissue × signal map of how well each signal tracks Dice, showing where a signal flips sign. Click a cell to open it in the scatter plot.
-  - *Case finder and difference view:* jump to failed cases where the map just re-draws the prediction (or is independent of it), and compare any map with the control pixel by pixel.
+  - *Reliability atlas:* a tissue × signal map of how well each signal tracks Dice, showing where a signal flips sign. Click a cell to open that tissue and signal in the Explore tab.
+  - *Case inspector and difference view:* every image has its full strip (patch, ground truth, prediction and all heatmaps), and any map can be compared with the control pixel by pixel.
 
 ---
 
