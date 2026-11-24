@@ -71,6 +71,9 @@ svg text { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
 .pt { cursor: pointer; }
 .pt:focus-visible { outline: none; stroke: var(--fg); stroke-width: 2; }
 .note { color: var(--muted); font-size: 0.8rem; margin: 6px 0 0; }
+.note .ln { display: block; margin-top: 3px; }
+.note b { color: var(--fg); font-family: var(--font-mono); font-weight: 500; }
+.note .tip { font-size: 0.74rem; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .score { display: grid; gap: 10px; }
 .srow { display: grid; gap: 3px; }
 .srow .lab { display: flex; justify-content: space-between; gap: 8px; }
@@ -363,7 +366,9 @@ function drawPlot(rows) {
     if (!wq) wq = requestAnimationFrame(() => { wq = null; draw(); });
   };
   const rho = spearman(pts.map((p) => p.x), pts.map((p) => p.r.d));
-  $("plotnote").textContent = `Spearman correlation with Dice across the ${pts.length} images shown: ${fmt(rho)}. ${sig.hint} Drag a box to zoom in; when zoomed, scroll (or use the arrows) to move around, and double-click to reset.`;
+  const dir = Number.isNaN(rho) ? "" : Math.abs(rho) < 0.1 ? "almost no relationship with Dice" : rho < 0 ? "higher values go with worse segmentation" : "higher values go with better segmentation";
+  $("plotnote").innerHTML = `<span class="ln">${sig.hint}</span><span class="ln">Spearman correlation with Dice: <b>${fmt(rho)}</b> across ${pts.length} images shown${dir ? ", so " + dir : ""}.</span>` +
+    `<span class="ln tip">Drag a box to zoom. When zoomed, scroll or use the arrows to pan. Double-click to reset.</span>`;
 }
 
 function drawScore(rows) {
