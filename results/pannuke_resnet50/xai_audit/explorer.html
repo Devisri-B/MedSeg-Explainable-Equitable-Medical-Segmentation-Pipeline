@@ -143,7 +143,8 @@ h3 { font-size: 0.92rem; margin: 0 0 6px; letter-spacing: -0.005em; }
 @media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
 .narrow { max-width: 640px; }
 #trisvg { max-width: 470px; } .narrow.wide { max-width: none; }
-.atlaswrap { max-width: 960px; margin-inline: auto; }
+.atlasgrid { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 22px; align-items: start; }
+@media (max-width: 900px) { .atlasgrid { grid-template-columns: minmax(0, 1fr); } }
 table.sc { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 table.sc th { text-align: right; font-weight: 600; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0 6px 8px; }
 table.sc th:first-child, table.sc td:first-child { text-align: left; padding-left: 0; }
@@ -194,6 +195,7 @@ table.sc.h td { padding: 5px 6px; }
     <button role="tab" id="tb-explore" data-tab="explore" aria-selected="true">Explore the audit</button>
     <button role="tab" id="tb-copy" data-tab="copy" aria-selected="false">Do the maps copy the prediction?</button>
     <button role="tab" id="tb-warn" data-tab="warn" aria-selected="false">Can a map warn of failure?</button>
+    <button role="tab" id="tb-atlas" data-tab="atlas" aria-selected="false">Where does each signal work?</button>
   </nav>
 
   <section class="tabpanel" id="tab-explore" role="tabpanel" aria-labelledby="tb-explore">
@@ -265,11 +267,17 @@ table.sc.h td { padding: 5px 6px; }
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="tabpanel" id="tab-atlas" role="tabpanel" aria-labelledby="tb-atlas" hidden>
     <div class="panel">
       <h2>Where does each signal track segmentation quality?</h2>
-      <div class="atlaswrap">
+      <div class="atlasgrid">
         <div class="narrow wide"><svg id="atlas" viewBox="0 0 690 508" role="img" aria-label="Correlation of each explanation signal with Dice, by tissue"></svg></div>
-        <p class="note" id="atlasnote"></p>
+        <aside class="how">
+          <h3>How to read this</h3>
+          <div class="note" id="atlasnote"></div>
+        </aside>
       </div>
     </div>
   </section>
