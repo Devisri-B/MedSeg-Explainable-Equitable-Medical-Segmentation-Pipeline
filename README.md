@@ -15,14 +15,15 @@ This repository contains the complete implementation, trained model checkpoints,
 
 **[Open the live explorer →](https://devisri-b.github.io/MedSeg-Explainable-Equitable-Medical-Segmentation-Pipeline/)**
 
-A browser-based tool for testing the 's claims on real images. For each of 659 PanNuke tissue images you can see whether the heatmap shows anything beyond what the model already predicted, and whether it gives any warning when the segmentation fails.
+A browser-based tool for testing the 's claims on real images. For each of the 659 PanNuke tissue images in Study A (the tuned U-Net++ / ResNet-50 model) you can see whether the heatmap shows anything beyond what the model already predicted, and whether it gives any warning when the segmentation fails.
 
 - **Explore:** plot segmentation accuracy (Dice) against any explanation measure, filter by tissue and stain brightness, zoom and pan, and click any dot to see its heatmaps next to the ground truth and prediction.
 - **Copy detector:** shows which heatmap methods merely redraw the model's own prediction score. Decoder Grad-CAM does this for 99% of images.
 - **Failure triage:** simulates flagging bad segmentations (Dice < 0.5) from explanation measures, with a ranking-quality score (AUROC) and a chart of how many failures you catch for a given review budget.
 - **Reliability atlas:** a tissue-by-measure grid showing where an explanation measure tracks segmentation quality and where it doesn't.
 
-Studies B to D are available as per-image CSVs in [`results/`](results/README.md)
+**Coverage:** the explorer shows **Study A only**: 659 of the 3,180 audited images (see [the four studies](#experimental-setup-the-four-studies)). Every image carries its own set of heatmap pictures, and the page has to stay a single file that opens offline. Studies B, C and D (the weaker FPN and U-Net models and the external MoNuSeg data) are available as per-image CSVs in [`results/`](results/README.md).
+
 ---
 
 ![Attribution maps for three PanNuke images](assets/heatmap_audit_examples.jpg)
