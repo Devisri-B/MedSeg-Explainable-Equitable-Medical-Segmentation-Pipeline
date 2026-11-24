@@ -207,7 +207,6 @@ table.sc.h td { padding: 5px 6px; }
       <p class="lede2">The control is a heatmap that uses no gradients: just the model's own score for the class. If an attribution map agrees with it at r = 0.95 or more, the map adds nothing beyond the prediction. Each row is one method.</p>
       <div class="narrow"><svg id="copysvg" viewBox="0 0 540 272" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
       <p class="note" id="copynote"></p>
-      <button class="btn" id="tocopy" type="button">See a failed case where the map copies the prediction</button>
     </div>
   </section>
 
@@ -269,7 +268,6 @@ function build() {
   ts.onchange = () => { state.tissue = ts.value || null; draw(); };
   $("reset").onclick = () => { state.tissue = null; state.failOnly = false; state.bright = new Set(["dark", "medium", "bright"]); $("failtog").setAttribute("aria-pressed", false); [...$("bchips").children].forEach((c) => c.setAttribute("aria-pressed", true)); draw(); };
   document.querySelectorAll(".tabbar button").forEach((b) => { b.onclick = () => showTab(b.dataset.tab); b.onkeydown = (e) => { const t = [...document.querySelectorAll(".tabbar button")]; const i = t.indexOf(b); if (e.key === "ArrowRight") t[(i + 1) % t.length].focus(); if (e.key === "ArrowLeft") t[(i + t.length - 1) % t.length].focus(); }; });
-  $("tocopy").onclick = () => { showTab("explore"); window.jumpCase("copy"); };
 
   draw();
 }
@@ -564,15 +562,6 @@ function initLab() {
     box.appendChild(c);
   });
   $("bud").oninput = (e) => { state.budget = Number(e.target.value); $("budv").textContent = state.budget + "%"; drawTriage(filtered()); };
-  const jump = (kind) => {
-    const key = "agree_logit|cam@dec";
-    const pool = filtered().filter((r) => r.img && r.d < FAIL && present(r.v[key])).sort((a, b) => kind === "copy" ? b.v[key] - a.v[key] : a.d - b.d || a.i - b.i);
-    if (!pool.length) return;
-    state.cur[kind] = (state.cur[kind] + 1) % pool.length;
-    const r = pool[state.cur[kind]]; state.sel = r.i; draw();
-    $("case").scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-  window.jumpCase = jump;
 }
 
 function showTab(name) {
