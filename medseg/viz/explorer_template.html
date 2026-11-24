@@ -94,6 +94,8 @@ footer { color: var(--muted); font-size: 0.78rem; max-width: 100ch; }
 /* Audit lab */
 h3 { font-size: 0.92rem; margin: 0 0 6px; letter-spacing: -0.005em; }
 .lede2 { color: var(--muted); margin: 0 0 10px; max-width: 90ch; }
+.steps { margin: 0 0 12px; padding-left: 22px; color: var(--muted); max-width: 90ch; display: grid; gap: 4px; }
+.steps b { color: var(--fg); font-weight: 600; }
 .labgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .labgrid .wide { grid-column: 1 / -1; }
 @media (max-width: 960px) { .labgrid { grid-template-columns: minmax(0, 1fr); } }
@@ -220,7 +222,12 @@ table.sc.h td { padding: 5px 6px; }
   <section class="tabpanel" id="tab-warn" role="tabpanel" aria-labelledby="tb-warn" hidden>
     <div class="panel">
       <h2>Can a heatmap warn you the model is wrong? Try to beat uncertainty.</h2>
-      <p class="lede2">Pick signals to combine and how many images you can afford to review. A failure is a Dice below 0.5. The curve shows what share of failures you catch by reviewing the riskiest images first.</p>
+      <p class="lede2">A failure is a Dice below 0.5. Give every image a risk score, review the riskiest first, and count how many failures you catch.</p>
+      <ol class="steps">
+        <li><b>Choose signals.</b> Each chip is a measure that needs no ground truth. The ones you select are averaged into one risk score.</li>
+        <li><b>Set a review budget.</b> The slider is the share of images you can afford to check.</li>
+        <li><b>Read the curve.</b> It shows the share of failures caught as you review. Beat the dashed line (uncertainty alone) to show a heatmap adds something.</li>
+      </ol>
       <div class="two">
         <div>
           <div class="sigs" id="sigchips" role="group" aria-label="Signals to combine"></div>
