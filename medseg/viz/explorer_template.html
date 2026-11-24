@@ -209,7 +209,7 @@ table.sc.h td { padding: 5px 6px; }
     <div class="panel">
       <h2>Do the maps copy the prediction?</h2>
       <p class="lede2">The control is a heatmap that uses no gradients: just the model's own score for the class. If an attribution map agrees with it at r = 0.95 or more, the map adds nothing beyond the prediction. Each row is one method.</p>
-      <div class="narrow"><svg id="copysvg" viewBox="0 0 540 272" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
+      <div class="narrow"><svg id="copysvg" viewBox="0 0 540 286" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
       <p class="note" id="copynote"></p>
     </div>
   </section>
@@ -468,9 +468,10 @@ function gain(rows, scoreOf) {    // failures caught vs share of images reviewed
 
 function drawCopy(rows) {
   const meths = DATA.methods.filter((m) => m.key !== "logit");
-  const W = 540, rowH = 38, ml = 142, mr = 62, top = 8, bw = (W - ml - mr) / A_BINS;
+  const W = 540, rowH = 38, ml = 142, mr = 100, top = 22, bw = (W - ml - mr) / A_BINS;
   const xs = (v) => ml + (v - A_LO) / (A_HI - A_LO) * (W - ml - mr);
   let s = `<rect x="${xs(COPY_R)}" y="${top}" width="${xs(A_HI) - xs(COPY_R)}" height="${rowH * meths.length}" fill="var(--fail-soft)" opacity="0.8"/>`;
+  s += `<line x1="${xs(A_HI)}" x2="${xs(A_HI)}" y1="${top - 6}" y2="${top + rowH * meths.length}" stroke="var(--fail)" stroke-width="1.5"/><text x="${xs(A_HI)}" y="${top - 10}" text-anchor="end" style="fill:var(--fail);font-size:10px">1.0 = identical to the control</text>`;
   let worst = null;
   meths.forEach((m, k) => {
     const vals = rows.map((r) => r.v["agree_logit|" + m.key]).filter(present);
@@ -478,12 +479,15 @@ function drawCopy(rows) {
     const bins = new Array(A_BINS).fill(0);
     vals.forEach((v) => { const b = Math.max(0, Math.min(A_BINS - 1, Math.floor((v - A_LO) / (A_HI - A_LO) * A_BINS))); bins[b]++; });
     const mx = Math.max(1, ...bins);
-    bins.forEach((c, b) => { const h = c / mx * hmax; s += `<rect x="${(ml + b * bw + 0.5).toFixed(1)}" y="${(base - h).toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${h.toFixed(1)}" fill="${A_LO + (b + 0.5) / A_BINS * (A_HI - A_LO) >= COPY_R ? "var(--fail)" : "var(--accent)"}" opacity="0.85"/>`; });
+    bins.forEach((c, b) => { const h = c / mx * hmax; s += `<rect x="${(ml + b * bw + 0.5).toFixed(1)}" y="${(base - h).toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${h.toFixed(1)}" fill="${A_LO + (b + 0.5) / A_BINS * (A_HI - A_LO) >= COPY_R ? "var(--fail)" : "var(--accent)"}" opacity="0.85"><title>${c} of ${vals.length} images with r from ${(A_LO + b / A_BINS * (A_HI - A_LO)).toFixed(2)} to ${(A_LO + (b + 1) / A_BINS * (A_HI - A_LO)).toFixed(2)}</title></rect>`;
+      if (c === mx && c >= 0.5 * vals.length) s += `<text x="${(ml + b * bw - 5).toFixed(1)}" y="${(base - h / 2 + 3).toFixed(1)}" text-anchor="end" style="fill:var(--fg);font-size:10px">${c} of ${vals.length} images in this one bar</text>`; });
     s += `<line x1="${ml}" x2="${W - mr}" y1="${base}" y2="${base}" stroke="var(--line)"/>`;
     const pc = vals.length ? 100 * vals.filter((v) => v >= COPY_R).length / vals.length : NaN;
     if (!Number.isNaN(pc) && (!worst || pc > worst.pc)) worst = { pc, m };
     s += `<text x="${ml - 8}" y="${base - 6}" text-anchor="end" style="fill:var(--fg);font-size:10.5px">${mname(m)}</text>`;
     s += `<text x="${W - mr + 8}" y="${base - 6}" style="fill:var(--fg)">${Number.isNaN(pc) ? "–" : pc.toFixed(0) + "% copy"}</text>`;
+    const srt = [...vals].sort((p, q) => p - q), med = srt.length ? (srt[(srt.length - 1) >> 1] + srt[srt.length >> 1]) / 2 : NaN;
+    s += `<text x="${W - mr + 8}" y="${base + 5}" style="font-size:9px">median r ${Number.isNaN(med) ? "–" : med.toFixed(2)}</text>`;
   });
   const yb = top + rowH * meths.length;
   [-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0].forEach((v) => { s += `<text x="${xs(v)}" y="${yb + 13}" text-anchor="middle">${v.toFixed(1)}</text>`; });
