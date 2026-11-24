@@ -74,6 +74,8 @@ svg text { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
 .note .ln { display: block; margin-top: 3px; }
 .note b { color: var(--fg); font-family: var(--font-mono); font-weight: 500; }
 .note .tip { font-size: 0.74rem; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.sigexp { margin: 0 0 8px; color: var(--muted); font-size: 0.82rem; min-height: 4.4em; }
+.sigexp b { color: var(--fg); font-weight: 600; }
 .score { display: grid; gap: 10px; }
 .srow { display: grid; gap: 3px; }
 .srow .lab { display: flex; justify-content: space-between; gap: 8px; }
@@ -196,6 +198,7 @@ table.sc.h td { padding: 5px 6px; }
           <button class="chip" id="failtog" aria-pressed="false">Failures only</button>
           <span class="zoomtools" role="group" aria-label="Zoom"><button class="chip" id="zin" title="Zoom in">+</button><button class="chip" id="zout" title="Zoom out">&minus;</button><button class="chip" id="zreset" title="Show everything">Reset zoom</button><button class="chip" id="pl" title="Move left">&larr;</button><button class="chip" id="pu" title="Move up">&uarr;</button><button class="chip" id="pd" title="Move down">&darr;</button><button class="chip" id="pr" title="Move right">&rarr;</button></span>
         </div>
+        <p class="sigexp" id="sigexp"></p>
         <svg id="plot" viewBox="0 0 640 450" role="img" aria-label="Segmentation quality against the chosen explanation signal"></svg>
         <p class="note" id="plotnote"></p>
       </div>
@@ -268,10 +271,45 @@ function filtered() {
   return DATA.rows.filter((r) => state.bright.has(r.b) && (!state.tissue || r.t === state.tissue) && (!state.failOnly || r.d < FAIL));
 }
 
+/* How the Signal dropdown is grouped, and what each signal means in plain words. */
+const SIGNAL_GROUPS = [
+  ["Model's own confidence", ["entropy_region"]],
+  ["Stability under a stain shift", ["stain_pred_dice", "stab_rho|hires@enc4", "stab_rho|cam@dec", "stab_rho|lrp"]],
+  ["Agreement between maps", ["agree|cam-hires", "agree|cam-gxi"]],
+  ["Copying the prediction", ["agree_logit|hires@dec", "agree_logit|lrp"]],
+  ["Map shape and faithfulness", ["conc|hires@enc4", "del_gain_region|hires@enc4", "del_gain_region|lrp"]],
+];
+const stabText = (m) => `Does the ${m} keep its pixel ranking after a small stain shift? 1 means the map is unchanged.`;
+const copyText = (m) => `Agreement of the ${m} with the model's own score map, the control. At 0.95 or more the map is a copy of the prediction.`;
+const delText = (m) => `Hide the top pixels of the ${m} and see how fast the model's score falls, versus random pixels in the same region. Positive: informative. Negative: worse than random.`;
+const EXPLAIN = {
+  "entropy_region": "How unsure the model is inside the region it predicted. Needs no ground truth. More uncertainty usually goes with a worse segmentation.",
+  "stain_pred_dice": "Overlap between the prediction before and after a small stain-colour shift. High means the segmentation holds steady; low means it changes.",
+  "stab_rho|hires@enc4": stabText("HiResCAM-style encoder map"),
+  "stab_rho|cam@dec": stabText("Grad-CAM decoder map"),
+  "stab_rho|lrp": stabText("LRP map"),
+  "agree|cam-hires": "Rank agreement between the decoder Grad-CAM and HiResCAM-style maps. High means two methods draw nearly the same picture.",
+  "agree|cam-gxi": "Rank agreement between decoder Grad-CAM (region level) and Gradient x Input (pixel level). High means they point at the same places.",
+  "agree_logit|hires@dec": copyText("HiResCAM-style decoder map"),
+  "agree_logit|lrp": copyText("LRP map"),
+  "conc|hires@enc4": "How spread out the HiResCAM-style encoder map is. 0 means concentrated on a few pixels, 1 means spread evenly over the image.",
+  "del_gain_region|hires@enc4": delText("HiResCAM-style encoder map"),
+  "del_gain_region|lrp": delText("LRP map"),
+};
+
 function build() {
   $("lede").textContent = DATA.lede;
   const xs = $("xsel");
-  DATA.signals.forEach((s) => { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; xs.appendChild(o); });
+  const addOpt = (parent, s) => { const o = document.createElement("option"); o.value = s.key; o.textContent = s.label; parent.appendChild(o); };
+  const placed = new Set();
+  SIGNAL_GROUPS.forEach(([title, keys]) => {
+    const list = keys.map((k) => DATA.signals.find((s) => s.key === k)).filter(Boolean);
+    if (!list.length) return;
+    const og = document.createElement("optgroup"); og.label = title;
+    list.forEach((s) => { addOpt(og, s); placed.add(s.key); });
+    xs.appendChild(og);
+  });
+  DATA.signals.filter((s) => !placed.has(s.key)).forEach((s) => addOpt(xs, s));   // any signal not listed above still appears
   xs.value = state.x;
   xs.onchange = () => { state.x = xs.value; state.view = null; draw(); };
   $("failtog").onclick = (e) => { state.failOnly = !state.failOnly; e.currentTarget.setAttribute("aria-pressed", state.failOnly); draw(); };
@@ -297,6 +335,7 @@ state.view = null;   // zoom window in data units, or null for the full range
 function drawPlot(rows) {
   const W = 640, H = 450, m = { l: 46, r: 14, t: 12, b: 40 };
   const key = state.x, sig = DATA.signals.find((s) => s.key === key);
+  $("sigexp").innerHTML = `<b>${sig.label}.</b> ${EXPLAIN[key] || sig.hint}`;
   const pts = rows.map((r) => ({ r, x: r.v[key] })).filter((p) => p.x !== null && p.x !== undefined && !Number.isNaN(p.x));
   const allx = DATA.rows.map((r) => r.v[key]).filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
   let lo = Math.min(...allx), hi = Math.max(...allx); if (lo === hi) { lo -= 0.5; hi += 0.5; }
@@ -379,7 +418,7 @@ function drawPlot(rows) {
   };
   const rho = spearman(pts.map((p) => p.x), pts.map((p) => p.r.d));
   const dir = Number.isNaN(rho) ? "" : Math.abs(rho) < 0.1 ? "almost no relationship with Dice" : rho < 0 ? "higher values go with worse segmentation" : "higher values go with better segmentation";
-  $("plotnote").innerHTML = `<span class="ln">${sig.hint}</span><span class="ln">Spearman correlation with Dice: <b>${fmt(rho)}</b> across ${pts.length} images shown${dir ? ", so " + dir : ""}.</span>` +
+  $("plotnote").innerHTML = `<span class="ln">Spearman correlation with Dice: <b>${fmt(rho)}</b> across ${pts.length} images shown${dir ? ", so " + dir : ""}.</span>` +
     `<span class="ln tip">Drag a box to zoom. When zoomed, scroll or use the arrows to pan. Double-click to reset.</span>`;
 }
 
