@@ -643,10 +643,10 @@ function draw() {
 }
 initLab();
 showTab("explore");
-(function () {   // open one case by default: the failed case whose Grad-CAM map most closely repeats the prediction
+(function () {   // open one case by default: a well-segmented image (highest Dice) where decoder Grad-CAM still copies the prediction
   const k = "agree_logit|cam@dec";
-  const pool = DATA.rows.filter((r) => r.img && r.d < FAIL && present(r.v[k])).sort((a, b) => b.v[k] - a.v[k]);
-  if (pool.length) { state.sel = pool[0].i; state.cur.copy = 0; }
+  const pool = DATA.rows.filter((r) => r.img && r.d >= FAIL && present(r.v[k]) && r.v[k] >= COPY_R).sort((a, b) => b.d - a.d || a.i - b.i);
+  if (pool.length) state.sel = pool[0].i;
 })();
 build();
 </script>
