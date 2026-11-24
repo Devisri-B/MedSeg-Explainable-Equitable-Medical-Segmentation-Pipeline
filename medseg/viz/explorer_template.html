@@ -98,6 +98,12 @@ h3 { font-size: 0.92rem; margin: 0 0 6px; letter-spacing: -0.005em; }
 .lede2 { color: var(--muted); margin: 0 0 10px; max-width: 90ch; }
 .steps { margin: 0 0 12px; padding-left: 22px; color: var(--muted); max-width: 90ch; display: grid; gap: 4px; }
 .steps b { color: var(--fg); font-weight: 600; }
+.how { border-left: 2px solid var(--line); padding-left: 14px; color: var(--muted); font-size: 0.8rem; }
+.how h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
+.how p { margin: 0 0 6px; }
+.how .steps { margin: 0; padding-left: 18px; font-size: 0.8rem; max-width: none; }
+.side { display: grid; gap: 18px; align-content: start; }
+@media (max-width: 900px) { .how { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 10px; } }
 .labgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .labgrid .wide { grid-column: 1 / -1; }
 @media (max-width: 960px) { .labgrid { grid-template-columns: minmax(0, 1fr); } }
@@ -216,13 +222,20 @@ table.sc.h td { padding: 5px 6px; }
   <section class="tabpanel" id="tab-copy" role="tabpanel" aria-labelledby="tb-copy" hidden>
     <div class="panel">
       <h2>Do the maps copy the prediction?</h2>
-      <p class="lede2">Every heatmap method is compared with a <b>control</b>: a heatmap that uses no gradients, just the model's own score for the class.</p>
-      <ol class="steps">
-        <li><b>Each row is one method.</b> The bars count images by how closely that method's map agrees with the control (rank correlation, r).</li>
-        <li><b>1.0 means identical.</b> In the pink zone (r of 0.95 or more) the map is a copy and adds nothing beyond the prediction.</li>
-        <li><b>The right-hand column</b> gives the share of images where the method is a copy, and its median r.</li>
-      </ol>
-      <div class="narrow"><svg id="copysvg" viewBox="0 0 540 286" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
+      <div class="two">
+        <div>
+        <div class="narrow"><svg id="copysvg" viewBox="0 0 540 286" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
+        </div>
+        <aside class="how">
+          <h3>How to read this</h3>
+          <p>Every heatmap method is compared with a <b>control</b>: the model's own score for the class, drawn as a heatmap with no gradients.</p>
+          <ol class="steps">
+            <li><b>Each row is one method.</b> The bars count images by how closely that method's map agrees with the control (rank correlation, r).</li>
+            <li><b>1.0 means identical.</b> In the pink zone (r of 0.95 or more) the map is a copy and adds nothing beyond the prediction.</li>
+            <li><b>The right-hand column</b> gives the share of images where the method is a copy, and its median r.</li>
+          </ol>
+        </aside>
+      </div>
       <p class="note" id="copynote"></p>
     </div>
   </section>
@@ -230,12 +243,6 @@ table.sc.h td { padding: 5px 6px; }
   <section class="tabpanel" id="tab-warn" role="tabpanel" aria-labelledby="tb-warn" hidden>
     <div class="panel">
       <h2>Can a heatmap warn you the model is wrong? Try to beat uncertainty.</h2>
-      <p class="lede2">A failure is a Dice below 0.5. Give every image a risk score, review the riskiest first, and count how many failures you catch.</p>
-      <ol class="steps">
-        <li><b>Choose signals.</b> Each chip is a measure that needs no ground truth. The ones you select are averaged into one risk score.</li>
-        <li><b>Set a review budget.</b> The slider is the share of images you can afford to check.</li>
-        <li><b>Read the curve.</b> It shows the share of failures caught as you review. Beat the dashed line (uncertainty alone) to show a heatmap adds something.</li>
-      </ol>
       <div class="two">
         <div>
           <div class="sigs" id="sigchips" role="group" aria-label="Signals to combine"></div>
@@ -243,7 +250,18 @@ table.sc.h td { padding: 5px 6px; }
           <svg id="trisvg" viewBox="0 0 360 230" role="img" aria-label="Share of segmentation failures caught against share of images reviewed"></svg>
           <div class="legend"><span style="color:var(--accent)"><i></i>your combination</span><span style="color:var(--fail)"><i style="border-top-style:dashed"></i>uncertainty only</span><span><i style="border-top-color:var(--muted);border-top-style:dotted"></i>random order</span></div>
         </div>
-        <div class="readout" id="triread"></div>
+        <div class="side">
+          <div class="readout" id="triread"></div>
+          <aside class="how">
+            <h3>How to read this</h3>
+            <p>A failure is a Dice below 0.5. Give every image a risk score, review the riskiest first, and count how many failures you catch.</p>
+            <ol class="steps">
+              <li><b>Choose signals.</b> Each chip is a measure that needs no ground truth. The ones you select are averaged into one risk score.</li>
+              <li><b>Set a review budget.</b> The slider is the share of images you can afford to check.</li>
+              <li><b>Read the curve.</b> It shows the share of failures caught as you review. Beat the dashed line (uncertainty alone) to show a heatmap adds something.</li>
+            </ol>
+          </aside>
+        </div>
       </div>
     </div>
     <div class="panel">
