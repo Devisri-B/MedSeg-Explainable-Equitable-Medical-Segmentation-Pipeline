@@ -1,6 +1,6 @@
 # Explanation audit results
 
-Every number in the paper comes from the files in this folder, so the analysis can be checked without retraining a model or re-running inference. The central unit is **one row per audited image**: for each image we explain the model's prediction with several heatmap methods and record how each map behaves (see [Reading a `rows*.csv` file](#reading-a-rowscsv-file)).
+The analysis can be checked without retraining a model or re-running inference. The central unit is **one row per audited image**: for each image we explain the model's prediction with several heatmap methods and record how each map behaves (see [Reading a `rows*.csv` file](#reading-a-rowscsv-file)).
 
 - Start with the [four studies](#the-four-studies) to see which files belong to which experiment.
 - Use [Load a study](#load-a-study-in-python) to get a clean table in a few lines of pandas.
