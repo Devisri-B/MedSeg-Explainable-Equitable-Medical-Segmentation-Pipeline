@@ -480,7 +480,7 @@ function drawCopy(rows) {
     vals.forEach((v) => { const b = Math.max(0, Math.min(A_BINS - 1, Math.floor((v - A_LO) / (A_HI - A_LO) * A_BINS))); bins[b]++; });
     const mx = Math.max(1, ...bins);
     bins.forEach((c, b) => { const h = c / mx * hmax; s += `<rect x="${(ml + b * bw + 0.5).toFixed(1)}" y="${(base - h).toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${h.toFixed(1)}" fill="${A_LO + (b + 0.5) / A_BINS * (A_HI - A_LO) >= COPY_R ? "var(--fail)" : "var(--accent)"}" opacity="0.85"><title>${c} of ${vals.length} images with r from ${(A_LO + b / A_BINS * (A_HI - A_LO)).toFixed(2)} to ${(A_LO + (b + 1) / A_BINS * (A_HI - A_LO)).toFixed(2)}</title></rect>`;
-      if (c === mx && c >= 0.5 * vals.length) s += `<text x="${(ml + b * bw - 5).toFixed(1)}" y="${(base - h / 2 + 3).toFixed(1)}" text-anchor="end" style="fill:var(--fg);font-size:10px">${c} of ${vals.length} images in this one bar</text>`; });
+      if (c === mx && c >= 0.5 * vals.length) s += `<text x="${(ml + b * bw - 5).toFixed(1)}" y="${(base - h / 2 + 3).toFixed(1)}" text-anchor="end" style="fill:var(--fg);font-size:10px">${c === vals.length ? "All " + c : c + " of " + vals.length} images have r between ${(A_LO + b / A_BINS * (A_HI - A_LO)).toFixed(2)} and ${(A_LO + (b + 1) / A_BINS * (A_HI - A_LO)).toFixed(2)} →</text>`; });
     s += `<line x1="${ml}" x2="${W - mr}" y1="${base}" y2="${base}" stroke="var(--line)"/>`;
     const pc = vals.length ? 100 * vals.filter((v) => v >= COPY_R).length / vals.length : NaN;
     if (!Number.isNaN(pc) && (!worst || pc > worst.pc)) worst = { pc, m };
