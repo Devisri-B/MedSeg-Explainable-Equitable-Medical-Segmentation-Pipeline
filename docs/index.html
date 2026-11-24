@@ -213,7 +213,12 @@ table.sc.h td { padding: 5px 6px; }
   <section class="tabpanel" id="tab-copy" role="tabpanel" aria-labelledby="tb-copy" hidden>
     <div class="panel">
       <h2>Do the maps copy the prediction?</h2>
-      <p class="lede2">The control is a heatmap that uses no gradients: just the model's own score for the class. If an attribution map agrees with it at r = 0.95 or more, the map adds nothing beyond the prediction. Each row is one method.</p>
+      <p class="lede2">Every heatmap method is compared with a <b>control</b>: a heatmap that uses no gradients, just the model's own score for the class.</p>
+      <ol class="steps">
+        <li><b>Each row is one method.</b> The bars count images by how closely that method's map agrees with the control (rank correlation, r).</li>
+        <li><b>1.0 means identical.</b> In the pink zone (r of 0.95 or more) the map is a copy and adds nothing beyond the prediction.</li>
+        <li><b>The right-hand column</b> gives the share of images where the method is a copy, and its median r.</li>
+      </ol>
       <div class="narrow"><svg id="copysvg" viewBox="0 0 540 286" role="img" aria-label="Distribution of agreement with the model's own score map, per attribution method"></svg></div>
       <p class="note" id="copynote"></p>
     </div>
@@ -492,7 +497,7 @@ function drawCopy(rows) {
     vals.forEach((v) => { const b = Math.max(0, Math.min(A_BINS - 1, Math.floor((v - A_LO) / (A_HI - A_LO) * A_BINS))); bins[b]++; });
     const mx = Math.max(1, ...bins);
     bins.forEach((c, b) => { const h = c / mx * hmax; s += `<rect x="${(ml + b * bw + 0.5).toFixed(1)}" y="${(base - h).toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${h.toFixed(1)}" fill="${A_LO + (b + 0.5) / A_BINS * (A_HI - A_LO) >= COPY_R ? "var(--fail)" : "var(--accent)"}" opacity="0.85"><title>${c} of ${vals.length} images with r from ${(A_LO + b / A_BINS * (A_HI - A_LO)).toFixed(2)} to ${(A_LO + (b + 1) / A_BINS * (A_HI - A_LO)).toFixed(2)}</title></rect>`;
-      if (c === mx && c >= 0.5 * vals.length) s += `<text x="${(ml + b * bw - 5).toFixed(1)}" y="${(base - h / 2 + 3).toFixed(1)}" text-anchor="end" style="fill:var(--fg);font-size:10px">${c === vals.length ? "All " + c : c + " of " + vals.length} images have r between ${(A_LO + b / A_BINS * (A_HI - A_LO)).toFixed(2)} and ${(A_LO + (b + 1) / A_BINS * (A_HI - A_LO)).toFixed(2)} →</text>`; });
+      if (c === mx && c >= 0.5 * vals.length) { const tx = (ml + b * bw - 6).toFixed(1), ty = base - h / 2 - 1, lo = (A_LO + b / A_BINS * (A_HI - A_LO)).toFixed(2), hi = (A_LO + (b + 1) / A_BINS * (A_HI - A_LO)).toFixed(2); s += `<text x="${tx}" y="${ty.toFixed(1)}" text-anchor="end" style="fill:var(--fg);font-size:10px">${c === vals.length ? "All " + c : c + " of " + vals.length} images</text><text x="${tx}" y="${(ty + 11).toFixed(1)}" text-anchor="end" style="font-size:9px">r ${lo} to ${hi} →</text>`; } });
     s += `<line x1="${ml}" x2="${W - mr}" y1="${base}" y2="${base}" stroke="var(--line)"/>`;
     const pc = vals.length ? 100 * vals.filter((v) => v >= COPY_R).length / vals.length : NaN;
     if (!Number.isNaN(pc) && (!worst || pc > worst.pc)) worst = { pc, m };
@@ -505,8 +510,8 @@ function drawCopy(rows) {
   [-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0].forEach((v) => { s += `<text x="${xs(v)}" y="${yb + 13}" text-anchor="middle">${v.toFixed(1)}</text>`; });
   s += `<text x="${(ml + W - mr) / 2}" y="${yb + 28}" text-anchor="middle">Rank agreement with the model's own score map (the gradient-free control)</text>`;
   $("copysvg").innerHTML = s;
-  $("copynote").textContent = `Shaded: agreement of ${COPY_R} or more, where the map carries no information beyond the prediction itself. ` +
-    (worst ? `In the images selected, ${mname(worst.m)} is a copy for ${worst.pc.toFixed(0)}%.` : "");
+  $("copynote").innerHTML = `<span class="ln">Pink zone: r of ${COPY_R} or more. A map there is a copy of the prediction and carries nothing beyond it.</span>` +
+    (worst && worst.pc > 0 ? `<span class="ln">In the images selected, <b>${mname(worst.m)}</b> is a copy for <b>${worst.pc.toFixed(0)}%</b>.</span>` : `<span class="ln">No method is a copy in the images selected.</span>`);
 }
 
 function drawTriage(rows) {
@@ -567,8 +572,9 @@ function drawAtlas() {
     const go = () => { state.tissue = c.dataset.t || null; state.x = c.dataset.k; state.view = null; $("xsel").value = state.x; showTab("explore"); draw(); $("plot").scrollIntoView({ behavior: "smooth", block: "center" }); };
     c.onclick = go; c.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
   });
-  $("atlasnote").textContent = "Each cell is the Spearman correlation between a signal and Dice within one tissue (indigo: higher signal, better segmentation; rose: the reverse; empty: fewer than 12 images). " +
-    "A signal that works overall can flip sign in a tissue. Click a cell to open that tissue and signal in the Explore tab.";
+  $("atlasnote").innerHTML = `<span class="ln">Each cell is the Spearman correlation between a signal and Dice within one tissue. Empty cells have fewer than 12 images.</span>` +
+    `<span class="ln"><b>Indigo:</b> a higher signal goes with better segmentation. <b>Rose:</b> the reverse (expected for uncertainty). Darker means stronger.</span>` +
+    `<span class="ln tip">A signal that works overall can flip sign in one tissue. Click a cell to open it in the Explore tab.</span>`;
 }
 
 function drawLab(rows) { drawCopy(rows); drawTriage(rows); drawAtlas(); }
